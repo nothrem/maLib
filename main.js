@@ -222,14 +222,7 @@ $ = {
 $_PATH = $_PATH || '';
 $.loadJS($_PATH + 'external/printf');
 $.loadJS($_PATH + 'framework/console');
-//$.loadJS($_PATH + 'framework/lib');
-//$.loadJS($_PATH + 'framework/ex');
-//$.loadJS($_PATH + 'framework/ajax');
-//$.loadJS($_PATH + 'framework/element');
-//$.loadJS($_PATH + 'framework/framework');
-////$.loadJS($_PATH + 'framework/animations');
-//$.loadJS($_PATH + 'framework/tween/tween');
-//$.loadCSS($_PATH + 'style/framework');
+$.loadJS($_PATH + 'framework/util');
 
 /**
  * Try to initialize the library
