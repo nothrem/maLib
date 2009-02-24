@@ -10,6 +10,13 @@
  */
 
 /**
+ * Required parts:
+ *   NONE
+ * Optional parts:
+ *   (external) window.printf()
+ */
+
+/**
  * console scope
  */
 $.console = {

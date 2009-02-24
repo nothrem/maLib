@@ -9,6 +9,14 @@
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
  */
 
+/**
+ * Required parts:
+ *   NONE
+ * Optional parts:
+ *   (external) window.printf
+ */
+
+
 $.util = {
 	/**
 	 * NOP (null operation; empty function; does nothing)

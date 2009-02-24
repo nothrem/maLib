@@ -9,6 +9,13 @@
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
  */
 
+/**
+ * Required parts:
+ *   $.console
+ * Optional parts:
+ *   NONE
+ */
+
 /* Technical manual
  *
  * Data Types
