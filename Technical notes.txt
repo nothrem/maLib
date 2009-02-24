@@ -33,5 +33,12 @@ OOP terms
   wrapper          = function that creates new object to wrap the given one
                      use "wrapper(object)" to create the wrapper
                      you don't have to use "new" keyword when creating wrapper
+  instance method  = method of each instance
+                     use "var i = new class(); i.instanceMethod()" to call it
+  static method    = method its reference is stored in scope of class object
+                     use "class.staticMethod()" to call it
+  wrapper method   = method of the wrapper of an object
+                     use "wrapper(object).wrapperMethod()" or
+                     use "var w = wrapper(object); w.wrapperMethod()" to call it
 
 
