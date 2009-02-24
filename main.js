@@ -217,6 +217,7 @@ $_PATH = $_PATH || '';
 $.loadJS($_PATH + 'external/printf');
 $.loadJS($_PATH + 'framework/console');
 $.loadJS($_PATH + 'framework/util');
+$.loadJS($_PATH + 'framework/events');
 
 /**
  * Try to initialize the library
