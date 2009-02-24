@@ -16,19 +16,6 @@
  *   NONE
  */
 
-/* Technical manual
- *
- * Data Types
- * ==========
- * This framework uses names of data types differently from standart JS
- *
- *   Undefined        = undefined value
- *   Void / Null      = null value
- *   Boolean          = True / False
- *
- *   DOMelement       = element of DOM created by document.createElement()
- *   Element          = element created by $.element()
- */
 _ = null;
 
 /**

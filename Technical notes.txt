@@ -1,0 +1,37 @@
+Data Types
+==========
+This library's comments uses names of data types differently from standart JS
+
+Basic data types
+----------------
+
+  Undefined        = undefined value
+  Void / Null      = null value
+  Boolean          = True / False
+  String           = simple string created by '' or ""
+  Integer          = simple integer value (e.g. 1, 5, 123, 0xFF)
+  Float / Double   = simple float value (1.5, 3.0, .5)
+  Object           = object created by {} parenthesis (any but Array!!!)
+  Array            = object creared by [] parenthesis
+
+Note that any values are not created by constructors!!!
+e.g. Array !== new Array()
+
+Advanced data types
+-------------------
+
+  DOMelement       = element of DOM created by document.createElement()
+  Element          = element created by $.element()
+  Event            = instance of $.event class
+  
+OOP terms
+---------
+
+  class            = function that is marked as @constructor
+                     use "new class()" to create instance
+  instance         = object that was created by "new class()"
+  wrapper          = function that creates new object to wrap the given one
+                     use "wrapper(object)" to create the wrapper
+                     you don't have to use "new" keyword when creating wrapper
+
+
