@@ -129,7 +129,7 @@ ma.util = {
 	 * @return [Object] new clone
 	 */
 	clone: function(object, values){
-		var clone = {}; //new empty object - base for the clone
+		var clone = object.constructor(); //new empty object - base for the clone
 
 		//create 1:1 clone of the base object
 		ma.util.merge(clone, object);
@@ -138,7 +138,5 @@ ma.util = {
 
 		return clone;
 	}
-
-
 
 };
