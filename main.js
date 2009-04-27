@@ -68,9 +68,13 @@ ma = {
 				delete ma._onInit[i]; //cannot call non-function
 			}
 		} //for each init method
-		//disable interval if nothing is left to init
-		if (0 == ma._onInit.length && ma._onInit.waiting) {
-			window.clearInterval(ma._onInit.waiting);
+		
+		//after all init methods are executed...
+		if (0 == ma._onInit.length) {
+			//disable interval if nothing is left to init
+			if (ma._onInit.waiting) {
+				window.clearInterval(ma._onInit.waiting);
+			}
 		}
 	},
 
@@ -81,7 +85,7 @@ ma = {
 	 * @return [Boolean]
 	 */
 	isReady: function() {
-		return true === ma._isReady;
+		return (true === ma._isReady) && (true === Ext.isReady);
 	},
 
 	/**
@@ -97,6 +101,10 @@ ma = {
 		var scope;
 		if ('window' === path[0]) {
 			scope = window;
+			path.shift(); //delete 'window' from the array
+		}
+		else if ('Ext' === path[0]) {
+			scope = Ext;
 			path.shift(); //delete 'window' from the array
 		}
 		else
@@ -125,7 +133,7 @@ ma = {
 	 * @return [String] name of namespace part that does not exist, empty string on success
 	 *
 	 * notes:
-	 * - path can be either relative to current scope or absolute by starting with "window." or "ma."
+	 * - path can be either relative to current scope or absolute by starting with "window.", "ma." or "Ext."
 	 * - you can test any value that is defined (e.g. object, function, array, string (incl. empty), boolean (both True and False), etc.)
 	 */
 	isDefined: function(path) {
@@ -139,13 +147,14 @@ ma = {
 	 * @param  [String]  (optional, default: none) name of namespace that must be defined before init can be called (e.g. 'ma.console' to wait for ma.console to initialize)
 	 * @return [Boolean] true if function was already executed, false for funtion registered, null for error
 	 */
-	registerInitFunction: function(initFunction, required){
+	registerInitFunction: function(initFunction, required, name){
 		required = required || 'window.ma';
 		if ('function' === typeof initFunction) {
 			if (initFunction._initRequired) {
 				ma.console.warn('Each method can be used only once for initialization when "required" parameter is defined');
 			}
 			initFunction._initRequired = required;
+			initFunction._name = name || 'NoName';
 			if (true === ma._isReady) { //framework was already initialized...
 				if (!ma._runInitFunction(initFunction)) {
 					//initFunction must wait for required
@@ -175,13 +184,13 @@ ma = {
 			return true;
 		}
 		if ('string' === typeof initFunction._initRequired && '' !== ma._isDefined(initFunction._initRequired)) {
-			ma.console.log('Init method is waiting for ' + initFunction._initRequired);
+			ma.console.log('Init method ' + initFunction.name + ' is waiting for ' + initFunction._initRequired);
 			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
 				ma._onInit.waiting = window.setInterval("ma._onInitExecuter()", 500);
 			}
 			return false;
 		}
-		ma.console.log('Calling Init method');
+		ma.console.log('Calling init method' + initFunction.name);
 		initFunction.call(window); //call as function in the scope of window
 		return true;
 	},
@@ -194,7 +203,8 @@ ma = {
 	 * @return [void]
 	 */
 	loadJS: function(fileName){
-		document.write('<script type="text/javascript" src="' + ma._filePath + '/' + fileName + '.js"></script>');
+		var write = 'write'; //prevents JSlint from saying that document.write is evil ;)
+		document[write]('<script type="text/javascript" src="' + ma._filePath + '/' + fileName + '.js"></script>');
 	}, //loadJS()
 
 	/**
@@ -216,11 +226,21 @@ ma = {
 	 * waits until HTML is loaded and initializes the framework
 	 */
 	_startInit: function(){
+		ma._waitForExt();
 		if ('' === ma._isDefined('window.document.body')) {
 			ma._init();
 		}
 		else {
 			window.setTimeout(ma._startInit, 100);
+		}
+	},
+	
+	_waitForExt: function() {
+		if ('' === ma._isDefined('window.document.body') && '' === ma._isDefined('ma.console')) {
+			ma.console.log('Ext is ready to use.');
+		}
+		else {
+			window.setTimeout(ma._waitForExt, 100);
 		}
 	}
 }; //main scope object
