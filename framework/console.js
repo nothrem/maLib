@@ -19,7 +19,7 @@
 /**
  * console scope
  */
-$.console = {
+ma.console = {
 	/**
 	 * @private
 	 * initialization method
@@ -53,7 +53,7 @@ $.console = {
 	 * @param  message [String]
 	 */
 	_log: function(message) {
-		$.console._logCache.push(message);
+		ma.console._logCache.push(message);
 	},
 
 	/**
@@ -63,8 +63,8 @@ $.console = {
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
 	 */
 	error: function(message) {
-		message = $.console._printf.apply(this, arguments);
-		$.console._log('Internal error: ' + message);
+		message = ma.console._printf.apply(this, arguments);
+		ma.console._log('Internal error: ' + message);
 		if (window.console) {
 			console.trace(this);
 			console.log(message);
@@ -79,8 +79,8 @@ $.console = {
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
 	 */
 	warn: function(message) {
-		message = $.console._printf.apply(this, arguments);
-		$.console._log('Warning: ' + message);
+		message = ma.console._printf.apply(this, arguments);
+		ma.console._log('Warning: ' + message);
 		if (window.console) {
 			console.log(message);
 		}
@@ -93,8 +93,8 @@ $.console = {
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
 	 */
 	info: function(message) {
-		message = $.console._printf.apply(this, arguments);
-		$.console._log(message);
+		message = ma.console._printf.apply(this, arguments);
+		ma.console._log(message);
 		if (window.console) {
 			console.log(message);
 		}
@@ -107,8 +107,8 @@ $.console = {
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
 	 */
 	debug: function(message) {
-		message = $.console._printf.apply(this, arguments);
-		$.console._log(message);
+		message = ma.console._printf.apply(this, arguments);
+		ma.console._log(message);
 		if (window.console) {
 			console.log(message);
 		}
@@ -121,8 +121,8 @@ $.console = {
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
 	 */
 	log: function(message) {
-		message = $.console._printf.apply(this, arguments);
-		$.console._log(message);
+		message = ma.console._printf.apply(this, arguments);
+		ma.console._log(message);
 		if (window.console) {
 			console.log(message);
 		}
@@ -161,11 +161,11 @@ $.console = {
 	 * @return [void]
 	 */
 	openInWindow: function() {
-		$.console.log('Opening Console');
-		if (!$.console._logConsole) {
-			$.console._logConsole = window.open();
+		ma.console.log('Opening Console');
+		if (!ma.console._logConsole) {
+			ma.console._logConsole = window.open();
 		}
-		var win = $.console._logConsole;
+		var win = ma.console._logConsole;
 		win.focus();
 		var body = win.document.body; //get html body of the new window
 		if (!body) {
@@ -178,7 +178,7 @@ $.console = {
 		a.innerHTML = 'DEBUG CONSOLE of <a href="' + window.location.href + '" target="_blank">' + window.location.href + '</a> @ ' + new Date().toLocaleString();
 		body.appendChild(a);
 
-		var messages = $.console._logCache;
+		var messages = ma.console._logCache;
 		for (var i = 0, c = messages.length; i < c; i++) {
 			a = win.document.createElement('li');
 			a.innerHTML = messages[i];
@@ -204,7 +204,7 @@ $.console = {
 	 * @return [Array]
 	 */
 	get: function() {
-		return $.console._logCache;
+		return ma.console._logCache;
 	},
 
 	/**
@@ -214,7 +214,7 @@ $.console = {
 	 * @return [String]
 	 */
 	getText: function() {
-		return $.console._logCache.join('\n');
+		return ma.console._logCache.join('\n');
 	},
 
 	/**
@@ -224,14 +224,14 @@ $.console = {
 	 * @return [String]
 	 */
 	getHtml: function() {
-		return $.console._logCache.join('<br>');
+		return ma.console._logCache.join('<br>');
 	}
 
 
 };
 
 //if (!window.console) {
-//	window.console = $.console;
+//	window.console = ma.console;
 //}
 
-$.registerInitFunction($.console._init);
+ma.registerInitFunction(ma.console._init);

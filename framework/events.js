@@ -11,8 +11,8 @@
 
 /**
  * Required parts:
- *   $.console
- *   $.util
+ *   ma.console
+ *   ma.util
  * Optional parts:
  *   NONE
  */
@@ -22,13 +22,13 @@
 <code>
   How to create global event:
 
-     new $.Event('onError'); //creates new event "onError"
-     $.Event.registerObserver('onError', function(...) {...}); //registers observer
-     $.Event.notify('onError', this);
+     new ma.Event('onError'); //creates new event "onError"
+     ma.Event.registerObserver('onError', function(...) {...}); //registers observer
+     ma.Event.notify('onError', this);
 
   How to create local observer
 
-     this.onError = new $.Event('PRIVATE_myClass.onError'); //creates new event "onError" - note the starting part!
+     this.onError = new ma.Event('PRIVATE_myClass.onError'); //creates new event "onError" - note the starting part!
      this.on = function(observer) {
         this.onError.registerObserver(observer);
      }
@@ -41,39 +41,39 @@
  * @constructor
  * event that can be listened to by observers
  *
- * @param  name [String] (recommended to be structurised; e.g. "$.util.onAlert")
+ * @param  name [String] (recommended to be structurised; e.g. "ma.util.onAlert")
  * @param  defaultParams [Object] (optional)
  */
-$.Event = function(name, defaultParams){
-	var events = $.event._events;
+ma.Event = function(name, defaultParams){
+	var events = ma.event._events;
 
-	if ($.Event.isDefined(name)) {
-		$.console.warn('Event ' + name + ' already registered!');
+	if (ma.Event.isDefined(name)) {
+		ma.console.warn('Event ' + name + ' already registered!');
 		return null;
 	}
-	$.Event._events[name] = this;  //register new event
-	$.Event._observers[name] = []; //create list for observers
+	ma.Event._events[name] = this;  //register new event
+	ma.Event._observers[name] = []; //create list for observers
 
 	//set propeties
-	$.util.merge(this, {
+	ma.util.merge(this, {
 		_name: name,
 		_default: defaultParams || {},
-		_observers: $.Event._observers[name]
+		_observers: ma.Event._observers[name]
 	}); //merge()
 	//add methods
-	$.util.merge(this, $.Event._eventMethods);
+	ma.util.merge(this, ma.Event._eventMethods);
 	//add methods aliases
-	$.util.merge(this, {
+	ma.util.merge(this, {
 		on: this.registerObserver,
 		un: this.unregisterObserver,
 		rise: this.notify
 	}); //merge()
-}; //$.event
+}; //ma.event
 
 /**
- * list of methods that must have each new $.event instance (used by constructor)
+ * list of methods that must have each new ma.event instance (used by constructor)
  */
-$.Event._eventMethods = {
+ma.Event._eventMethods = {
 	/**
 	 * notifies all observers about this event
 	 *
@@ -83,10 +83,10 @@ $.Event._eventMethods = {
 	 */
 	notify: function(sender, params){
 		var
-			observers = $.event._observers[this._name],
+			observers = ma.event._observers[this._name],
 			results = [];
 
-		params = $.util.clone(this._default, params);
+		params = ma.util.clone(this._default, params);
 
 		if ('object' === typeof observers && Array === observers.constructor && 0 < observers.length) {
 			for (var i = 0, c = observers.length; i < c; i++) {
@@ -145,17 +145,17 @@ $.Event._eventMethods = {
 		return false; //not found
 	}
 
-}; //$.event._eventMethods
+}; //ma.event._eventMethods
 
 /**
- * list of static method of $.event class
+ * list of static method of ma.event class
  */
-$.util.merge($.Event, {
+ma.util.merge(ma.Event, {
 	/**
 	 * @private
 	 * stores all observers for every event
 	 *
-	 * @see $.Event.registerObserver()
+	 * @see ma.Event.registerObserver()
 	 */
 	_observers: [],
 
@@ -163,7 +163,7 @@ $.util.merge($.Event, {
 	 * @private
 	 * stores all events
 	 *
-	 * @see $.Event()
+	 * @see ma.Event()
 	 */
 	_events: [],
 
@@ -172,8 +172,8 @@ $.util.merge($.Event, {
 	 * @param {Object} name
 	 */
 	isDefined: function(name) {
-		return (undefined !== $.Event._events[name]);
-	}, //$.Event.isDefined()
+		return (undefined !== ma.Event._events[name]);
+	}, //ma.Event.isDefined()
 
 	/**
 	 * registers new observer to listen to an event
@@ -188,14 +188,14 @@ $.util.merge($.Event, {
 	 * @return [Boolean] false on any error
 	 */
 	registerObserver: function(event, observer){
-		if (event instanceof $.Event) {
+		if (event instanceof ma.Event) {
 			return event.registerObserver(observer);
 		}
 		else if ('string' === typeof event){
-			return $.Event._events[event].registerObserver(observer);
+			return ma.Event._events[event].registerObserver(observer);
 		}
 		return false;
-	}, //$.Event.registerObserver()
+	}, //ma.Event.registerObserver()
 
 	/**
 	 * removes observer from the listeners of this event
@@ -206,14 +206,14 @@ $.util.merge($.Event, {
 	 * @return [Boolean] false on any error (e.g. observer was not in the list)
 	 */
 	unregisterObserver: function(event, observer, remove){
-		if (event instanceof $.Event) {
+		if (event instanceof ma.Event) {
 			event.unregisterObserver(observer, remove);
 		}
 		else if ('string' === typeof event){
-			return $.Event._events[event].unregisterObserver(observer, remove);
+			return ma.Event._events[event].unregisterObserver(observer, remove);
 		}
 		return false;
-	}, //$.Event.registerObserver()
+	}, //ma.Event.registerObserver()
 
 	/**
 	 * fires an event
@@ -224,12 +224,12 @@ $.util.merge($.Event, {
 	 * @return [Array/Null] list of results of each observer or Null for wrong event
 	 */
 	notify: function(event, sender, params){
-		if (event instanceof $.Event) {
+		if (event instanceof ma.Event) {
 			return event.notify(sender, params);
 		}
-		else if ('string' === typeof event && $.Event._events[event]){
-			return $.Event._events[event].notify(sender, params);
+		else if ('string' === typeof event && ma.Event._events[event]){
+			return ma.Event._events[event].notify(sender, params);
 		}
 		return null;
-	} //$.Event.notify()
-}); //$.events
+	} //ma.Event.notify()
+}); //ma.events

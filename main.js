@@ -11,17 +11,15 @@
 
 /**
  * Required parts:
- *   $.console
+ *   ma.console
  * Optional parts:
  *   NONE
  */
 
-_ = null;
-
 /**
  * MA library's main scope
  */
-$ = {
+ma = {
 	/**
 	 * @private
 	 * List of methods to be executed after initialization if completed
@@ -36,8 +34,8 @@ $ = {
 	 * @return [void]
 	 */
 	_init: function(){
-		$._isReady = true; //tells that its already initialased
-		$._onInitExecuter();
+		ma._isReady = true; //tells that its already initialased
+		ma._onInitExecuter();
 	}, //init()
 
 	/**
@@ -46,15 +44,15 @@ $ = {
 	 */
 	_onInitExecuter: function(){
 		var i, cnt, initFunction;
-		for (i = 0, cnt = $._onInit.length; i < cnt; i++) {
-			initFunction = $._onInit[i];
-			if ($._runInitFunction(initFunction)) {
-				delete $._onInit[i]; //cannot call non-function
+		for (i = 0, cnt = ma._onInit.length; i < cnt; i++) {
+			initFunction = ma._onInit[i];
+			if (ma._runInitFunction(initFunction)) {
+				delete ma._onInit[i]; //cannot call non-function
 			}
 		} //for each init method
 		//disable interval if nothing is left to init
-		if (0 == $._onInit.length && $._onInit.waiting) {
-			window.clearInterval($._onInit.waiting);
+		if (0 == ma._onInit.length && ma._onInit.waiting) {
+			window.clearInterval(ma._onInit.waiting);
 		}
 	},
 
@@ -65,7 +63,7 @@ $ = {
 	 * @return [Boolean]
 	 */
 	isReady: function() {
-		return true === $._isReady;
+		return true === ma._isReady;
 	},
 
 	/**
@@ -74,7 +72,7 @@ $ = {
 	 *
 	 * @param  [String] path to test (e.g. 'window.document.body' to test existance of body element)
 	 * @return [String] name of namespace part that does not exist, empty string on success
-	 * @see $.isDefined()
+	 * @see ma.isDefined()
 	 */
 	_isDefined: function(path){
 		path = path.split('.');
@@ -109,41 +107,41 @@ $ = {
 	 * @return [String] name of namespace part that does not exist, empty string on success
 	 *
 	 * notes:
-	 * - path can be either relative to current scope or absolute by starting with "window." or "$."
+	 * - path can be either relative to current scope or absolute by starting with "window." or "ma."
 	 * - you can test any value that is defined (e.g. object, function, array, string (incl. empty), boolean (both True and False), etc.)
 	 */
 	isDefined: function(path) {
-		return $._isDefined(path);
+		return ma._isDefined(path);
 	},
 
 	/**
 	 * registers any function to be executed the moment framework is initialized
 	 *
 	 * @param  [Function] initialization function
-	 * @param  [String]  (optional, default: none) name of namespace that must be defined before init can be called (e.g. '$.console' to wait for $.console to initialize)
+	 * @param  [String]  (optional, default: none) name of namespace that must be defined before init can be called (e.g. 'ma.console' to wait for ma.console to initialize)
 	 * @return [Boolean] true if function was already executed, false for funtion registered, null for error
 	 */
 	registerInitFunction: function(initFunction, required){
 		required = required || 'window.$';
 		if ('function' === typeof initFunction) {
 			if (initFunction._initRequired) {
-				$.console.warn('Each method can be used only once for initialization when "required" parameter is defined');
+				ma.console.warn('Each method can be used only once for initialization when "required" parameter is defined');
 			}
 			initFunction._initRequired = required;
-			if (true === $._isReady) { //framework was already initialized...
-				if (!$._runInitFunction(initFunction)) {
+			if (true === ma._isReady) { //framework was already initialized...
+				if (!ma._runInitFunction(initFunction)) {
 					//initFunction must wait for required
-					$._onInit.push(initFunction);
+					ma._onInit.push(initFunction);
 					return false;
 				}
 				return true;
 			}
 
-			$._onInit.push(initFunction);
+			ma._onInit.push(initFunction);
 			return false;
 		}
 
-		$.console.error('Cannot use non-function for initialization');
+		ma.console.error('Cannot use non-function for initialization');
 		return null;
 	}, //registerInitFunction()
 
@@ -158,21 +156,21 @@ $ = {
 		if ('function' !== typeof initFunction) {
 			return true;
 		}
-		if ('string' === typeof initFunction._initRequired && '' !== $._isDefined(initFunction._initRequired)) {
-			$.console.log('Init method is waiting for ' + initFunction._initRequired);
-			if (!$._onInit.waiting) { //set timer to execute this method again in a while
-				$._onInit.waiting = window.setInterval("$._onInitExecuter()", 500);
+		if ('string' === typeof initFunction._initRequired && '' !== ma._isDefined(initFunction._initRequired)) {
+			ma.console.log('Init method is waiting for ' + initFunction._initRequired);
+			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
+				ma._onInit.waiting = window.setInterval("ma._onInitExecuter()", 500);
 			}
 			return false;
 		}
-		$.console.log('Calling Init method');
+		ma.console.log('Calling Init method');
 		initFunction.call(window); //call as function in the scope of window
 		return true;
 	},
 
 	/**
 	 * load JavaScript file into HTML head
-	 * !can be called only from script within HTML's HEAD or BODY (see $.ajax.request::isJS for later JS loading)
+	 * !can be called only from script within HTML's HEAD or BODY (see ma.ajax.request::isJS for later JS loading)
 	 *
 	 * @param  [String] file name
 	 * @return [void]
@@ -200,11 +198,11 @@ $ = {
 	 * waits until HTML is loaded and initializes the framework
 	 */
 	_startInit: function(){
-		if ('' === $._isDefined('window.document.body')) {
-			$._init();
+		if ('' === ma._isDefined('window.document.body')) {
+			ma._init();
 		}
 		else {
-			window.setTimeout($._startInit, 100);
+			window.setTimeout(ma._startInit, 100);
 		}
 	}
 
@@ -214,12 +212,13 @@ $ = {
  * load all framework files
  */
 $_PATH = $_PATH || '';
-$.loadJS($_PATH + 'external/printf');
-$.loadJS($_PATH + 'framework/console');
-$.loadJS($_PATH + 'framework/util');
-$.loadJS($_PATH + 'framework/events');
+ma.loadJS($_PATH + 'external/printf');
+ma.loadJS($_PATH + 'external/ExtJS3core/ext-core');
+ma.loadJS($_PATH + 'framework/console');
+ma.loadJS($_PATH + 'framework/util');
+ma.loadJS($_PATH + 'framework/events');
 
 /**
  * Try to initialize the library
  */
-$._startInit();
+ma._startInit();

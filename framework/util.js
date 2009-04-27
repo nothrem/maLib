@@ -17,7 +17,7 @@
  */
 
 
-$.util = {
+ma.util = {
 	/**
 	 * NOP (null operation; empty function; does nothing)
 	 *
@@ -47,10 +47,10 @@ $.util = {
 	 * @param  [Mixed]  (optional) any number of variables to be placed to plasceholders
 	 * @return [void]
 	 *
-	 * @see $.util.printf()
+	 * @see ma.util.printf()
 	 */
 	alert: function(message){
-		message = $.util.printf.apply(this, arguments);
+		message = ma.util.printf.apply(this, arguments);
 		window.alert(message);
 	}, //alert()
 	/**
@@ -63,7 +63,7 @@ $.util = {
 	 */
 	getWindowInfo: function(){
 		if (!window) {
-			$.console.error("Window is not defined");
+			ma.console.error("Window is not defined");
 			return;
 		}
 
@@ -108,7 +108,7 @@ $.util = {
 					if ('object' !== typeof object[property]) {
 						object[property] = {}; //ensure property is defined as object
 					}
-					error = $.util.setProperties(value, object[property]) || error;
+					error = ma.util.setProperties(value, object[property]) || error;
 				}
 				else {
 					object[property] = value;
@@ -132,9 +132,9 @@ $.util = {
 		var clone = {}; //new empty object - base for the clone
 
 		//create 1:1 clone of the base object
-		$.util.merge(clone, object);
+		ma.util.merge(clone, object);
 		//modify the clone with the values
-		$.util.merge(clone, values);
+		ma.util.merge(clone, values);
 
 		return clone;
 	}
