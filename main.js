@@ -21,6 +21,24 @@
  */
 ma = {
 	/**
+	 * load all framework files and init it; method must be called within page's HEAD
+	 * 
+	 * @param  path [String] (optional, default: '') relative path of framework files on server
+	 * @return [void] note that after this method framework may not be fully loaded, see ma.registerInitFunction()
+ 	 */
+	init: function(path) {
+		path = path || '';
+		ma._filePath = path;
+		ma.loadJS('external/printf');
+		ma.loadJS('external/ExtJS3core/ext-core');
+		ma.loadJS('framework/console');
+		ma.loadJS('framework/util');
+		ma.loadJS('framework/events');
+		
+		ma._startInit();
+	},
+
+	/**
 	 * @private
 	 * List of methods to be executed after initialization if completed
 	 */
@@ -82,9 +100,9 @@ ma = {
 			path.shift(); //delete 'window' from the array
 		}
 		else
-			if ('$' === path[0]) {
-				scope = $;
-				path.shift(); //delete '$' from the array
+			if ('ma' === path[0]) {
+				scope = ma;
+				path.shift(); //delete 'ma' from the array
 			}
 			else {
 				scope = this;
@@ -122,7 +140,7 @@ ma = {
 	 * @return [Boolean] true if function was already executed, false for funtion registered, null for error
 	 */
 	registerInitFunction: function(initFunction, required){
-		required = required || 'window.$';
+		required = required || 'window.ma';
 		if ('function' === typeof initFunction) {
 			if (initFunction._initRequired) {
 				ma.console.warn('Each method can be used only once for initialization when "required" parameter is defined');
@@ -176,7 +194,7 @@ ma = {
 	 * @return [void]
 	 */
 	loadJS: function(fileName){
-		document.write('<script type="text/javascript" src="' + fileName + '.js"></script>');
+		document.write('<script type="text/javascript" src="' + ma._filePath + '/' + fileName + '.js"></script>');
 	}, //loadJS()
 
 	/**
@@ -189,7 +207,7 @@ ma = {
 		var link = document.createElement('LINK');
 		link.setAttribute('type', 'text/css');
 		link.setAttribute('rel', 'stylesheet');
-		link.setAttribute('href', fileName + '.css');
+		link.setAttribute('href', ma._filePath + '/' + fileName + '.css');
 		document.getElementsByTagName("head").item(0).appendChild(link);
 	}, //loadCSS
 
@@ -205,20 +223,4 @@ ma = {
 			window.setTimeout(ma._startInit, 100);
 		}
 	}
-
 }; //main scope object
-
-/**
- * load all framework files
- */
-$_PATH = $_PATH || '';
-ma.loadJS($_PATH + 'external/printf');
-ma.loadJS($_PATH + 'external/ExtJS3core/ext-core');
-ma.loadJS($_PATH + 'framework/console');
-ma.loadJS($_PATH + 'framework/util');
-ma.loadJS($_PATH + 'framework/events');
-
-/**
- * Try to initialize the library
- */
-ma._startInit();
