@@ -7,6 +7,10 @@
  *
  * Author does not guarantee any support and takes no resposibility for any damage.
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
+ * 
+ * This library may contain whole, parts or modifications of third party files,
+ * libraries, frameworks or other code, which are published under one of 'free'
+ * licences. See head of main file or file LICENCE.* .
  */
 
 /**
@@ -31,6 +35,7 @@ ma = {
 		ma._filePath = path;
 		ma.loadJS('external/printf');
 		ma.loadJS('external/ExtJS3core/ext-core');
+		ma.loadJS('framework/base');
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
 		ma.loadJS('framework/events');
