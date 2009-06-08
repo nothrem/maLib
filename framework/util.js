@@ -137,6 +137,24 @@ ma.util = {
 		ma.util.merge(clone, values);
 
 		return clone;
-	}
+	},
+	
+	/**
+	 * returns value of GET parameter from page's URL
+	 * 
+	 * @param  [String] name of the param to get
+	 * @return [String] value of the param or empty string if param does not exist
+	 * 
+	 * @author NetLobo.com (optimized by nothrem)
+	 */
+	getUrlParam: function(param){
+		var regexS, regex, value;
+		
+		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+		regexS = "[\\?&]" + name + "=([^&#]*)";
+		regex = new RegExp(regexS);
+		value = regex.exec(window.location.href);
+		return (null === value) ? "" : results[1];
+	} //getUrlParam
 
 };
