@@ -21,13 +21,6 @@
  */
 ma.console = {
 	/**
-	 * @private
-	 * initialization method
-	 */
-	_init: function() {
-	},
-
-	/**
 	 * formats message with placeholders
 	 *
 	 * @param  [String] string with format placeholders
@@ -67,7 +60,7 @@ ma.console = {
 		ma.console._log('Internal error: ' + message);
 		if (window.console) {
 			console.trace(this);
-			console.log(message);
+			console.error(message);
 		}
 		throw message;
 	},
@@ -82,7 +75,7 @@ ma.console = {
 		message = ma.console._printf.apply(this, arguments);
 		ma.console._log('Warning: ' + message);
 		if (window.console) {
-			console.log(message);
+			console.warn(message);
 		}
 	},
 
@@ -96,7 +89,7 @@ ma.console = {
 		message = ma.console._printf.apply(this, arguments);
 		ma.console._log(message);
 		if (window.console) {
-			console.log(message);
+			console.info(message);
 		}
 	},
 
@@ -226,12 +219,4 @@ ma.console = {
 	getHtml: function() {
 		return ma.console._logCache.join('<br>');
 	}
-
-
 };
-
-//if (!window.console) {
-//	window.console = ma.console;
-//}
-
-ma.registerInitFunction(ma.console._init);

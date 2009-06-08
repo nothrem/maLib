@@ -25,12 +25,14 @@
  */
 ma = {
 	/**
-	 * load all framework files and init it; method must be called within page's HEAD
-	 * 
+	 * load all framework files
+	 *
 	 * @param  path [String] (optional, default: '') relative path of framework files on server
 	 * @return [void] note that after this method framework may not be fully loaded, see ma.registerInitFunction()
- 	 */
-	init: function(path) {
+	 *
+	 * @note start path with '/' to use absolute path (e.g. http://server/path) or w/o '/' for relative (e.g. http://server/project/path)
+	 */
+	_loadFiles: function(path){
 		path = path || '';
 		ma._filePath = path;
 		ma.loadJS('external/printf');
@@ -39,28 +41,49 @@ ma = {
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
 		ma.loadJS('framework/events');
-		
-		ma._startInit();
 	},
-
+	
 	/**
 	 * @private
-	 * List of methods to be executed after initialization if completed
-	 */
-	_onInit: [],
-
-	/**
-	 * @private
-	 * initializes the framework
+	 * Initializes framework
 	 *
 	 * @param  [void]
 	 * @return [void]
 	 */
 	_init: function(){
-		ma._isReady = true; //tells that its already initialased
-		ma._onInitExecuter();
-	}, //init()
-
+		//ma can init only when Ext is ready and the document body exists (i.e. 
+		if (ma.isDefined('window.Ext')) {
+			if (ma.isDefined('window.document.body', true)) {
+				ma._isReady = true; //tells that page is initialased and ready for developer interaction
+				ma.registerInitFunction(ma.onReady, '', 'onReady');
+				ma._onInitExecuter();
+			}
+			else {
+				window.setTimeout(ma._startInit, 10);
+			}
+		}
+		else {
+			ma._waitForExt();
+		}
+	},
+	
+	/**
+	 * @private
+	 * List of methods to be executed after initialization if completed
+	 */
+	_onInit: [],
+	
+	/**
+	 * Override this method to create method that is called after library is ready
+	 * This should be the method to use to create or alter your page instead of body.onload
+	 *
+	 * @param  [void]
+	 * @return [void]
+	 */
+	onReady: function(){
+		ma.console.warn('It is recommended to create your own ma.onReady handler!');
+	},
+	
 	/**
 	 * @private
 	 * runs onInit functions
@@ -73,7 +96,6 @@ ma = {
 				delete ma._onInit[i]; //cannot call non-function
 			}
 		} //for each init method
-		
 		//after all init methods are executed...
 		if (0 == ma._onInit.length) {
 			//disable interval if nothing is left to init
@@ -82,7 +104,7 @@ ma = {
 			}
 		}
 	},
-
+	
 	/**
 	 * return true when library is initialized
 	 *
@@ -92,59 +114,63 @@ ma = {
 	isReady: function() {
 		return (true === ma._isReady) && (true === Ext.isReady);
 	},
-
+	
 	/**
 	 * @private
 	 * tests if given namespace if defined
 	 *
 	 * @param  [String] path to test (e.g. 'window.document.body' to test existance of body element)
+	 * @param  [String] true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
 	 * @return [String] name of namespace part that does not exist, empty string on success
 	 * @see ma.isDefined()
 	 */
-	_isDefined: function(path){
+	_isDefined: function(path, ignoreNull){
 		path = path.split('.');
 		var scope;
 		if ('window' === path[0]) {
 			scope = window;
 			path.shift(); //delete 'window' from the array
 		}
-		else if ('Ext' === path[0]) {
-			scope = Ext;
-			path.shift(); //delete 'window' from the array
-		}
-		else
-			if ('ma' === path[0]) {
-				scope = ma;
-				path.shift(); //delete 'ma' from the array
+		else 
+			if ('Ext' === path[0]) {
+				scope = Ext;
+				path.shift(); //delete 'window' from the array
 			}
-			else {
-				scope = this;
-			}
-
+			else 
+				if ('ma' === path[0]) {
+					scope = ma;
+					path.shift(); //delete 'ma' from the array
+				}
+				else {
+					scope = this;
+				}
+		
 		for (var i = 0, c = path.length; i < c; i++) {
 			scope = scope[path[i]];
-			if (undefined === scope) {
+			if (undefined === scope || (ignoreNull && null === scope)) {
 				return path[i];
 			} //else this namespace exists and we can test next part of path
 		}
-
+		
 		return ''; //empty string means that given namespace exists
 	},
-
+	
 	/**
 	 * tests if given namespace if defined
 	 *
 	 * @param  [String] path to test (e.g. 'window.document.body' to test existance of body element)
-	 * @return [String] name of namespace part that does not exist, empty string on success
+	 * @param  [String] true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
+	 * @return [Boolean] True if the namespace is already defined
 	 *
 	 * notes:
 	 * - path can be either relative to current scope or absolute by starting with "window.", "ma." or "Ext."
-	 * - you can test any value that is defined (e.g. object, function, array, string (incl. empty), boolean (both True and False), etc.)
+	 * - you can test any value that is defined (e.g. object (for NULL see second param), function, array, string (incl. empty), boolean (both True and False), etc.)
+	 * - for debug purpose you can use private method _isDefined() that returns name of namespace that is undefined
 	 */
-	isDefined: function(path) {
-		return ma._isDefined(path);
+	isDefined: function(path, ignoreNull){
+		return '' === ma._isDefined.apply(this, arguments);
 	},
-
+	
 	/**
 	 * registers any function to be executed the moment framework is initialized
 	 *
@@ -158,7 +184,9 @@ ma = {
 			if (initFunction._initRequired) {
 				ma.console.warn('Each method can be used only once for initialization when "required" parameter is defined');
 			}
-			initFunction._initRequired = required;
+			if (required) { //prevents saving null or empty string
+				initFunction._initRequired = required;
+			}
 			initFunction._name = name || 'NoName';
 			if (true === ma._isReady) { //framework was already initialized...
 				if (!ma._runInitFunction(initFunction)) {
@@ -168,15 +196,14 @@ ma = {
 				}
 				return true;
 			}
-
+			
 			ma._onInit.push(initFunction);
 			return false;
 		}
-
+		
 		ma.console.error('Cannot use non-function for initialization');
 		return null;
 	}, //registerInitFunction()
-
 	/**
 	 * @private
 	 * exucutes initFunction
@@ -188,18 +215,21 @@ ma = {
 		if ('function' !== typeof initFunction) {
 			return true;
 		}
-		if ('string' === typeof initFunction._initRequired && '' !== ma._isDefined(initFunction._initRequired)) {
-			ma.console.log('Init method ' + initFunction.name + ' is waiting for ' + initFunction._initRequired);
+		
+		var required = initFunction._initRequired, name = initFunction._name;
+		
+		if ('string' === typeof required && !ma.isDefined(required)) {
+			ma.console.log('Init method ' + name + ' is waiting for ' + required);
 			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
 				ma._onInit.waiting = window.setInterval("ma._onInitExecuter()", 500);
 			}
 			return false;
 		}
-		ma.console.log('Calling init method' + initFunction.name);
+		ma.console.log('Init method ' + name + ' is ready to execute');
 		initFunction.call(window); //call as function in the scope of window
 		return true;
 	},
-
+	
 	/**
 	 * load JavaScript file into HTML head
 	 * !can be called only from script within HTML's HEAD or BODY (see ma.ajax.request::isJS for later JS loading)
@@ -211,7 +241,6 @@ ma = {
 		var write = 'write'; //prevents JSlint from saying that document.write is evil ;)
 		document[write]('<script type="text/javascript" src="' + ma._filePath + '/' + fileName + '.js"></script>');
 	}, //loadJS()
-
 	/**
 	 * load CSS file into HTML head
 	 *
@@ -225,27 +254,39 @@ ma = {
 		link.setAttribute('href', ma._filePath + '/' + fileName + '.css');
 		document.getElementsByTagName("head").item(0).appendChild(link);
 	}, //loadCSS
-
 	/**
 	 * @private
-	 * waits until HTML is loaded and initializes the framework
+	 * waits for Ext to load and init
+	 *
+	 * @param  [void]
+	 * @return [void]
 	 */
-	_startInit: function(){
-		ma._waitForExt();
-		if ('' === ma._isDefined('window.document.body')) {
-			ma._init();
+	_waitForExt: function(){
+		if (ma.isDefined('window.Ext.isReady') && Ext.isReady) {
+			ma._startInit();
 		}
 		else {
-			window.setTimeout(ma._startInit, 100);
+			window.setTimeout(ma._waitForExt, 10);
 		}
 	},
 	
-	_waitForExt: function() {
-		if ('' === ma._isDefined('window.document.body') && '' === ma._isDefined('ma.console')) {
-			ma.console.log('Ext is ready to use.');
-		}
-		else {
-			window.setTimeout(ma._waitForExt, 100);
-		}
-	}
+	_getMyPath: function() {
+		var
+			head = document.getElementsByTagName('HEAD')[0],
+			regex = /src=\"(.*)\/maLib\.js\"/g,
+			path = regex.exec(head.innerHTML);
+			
+		return (path && path[1]) ? path[1] : ''; 
+	} //_getMyPath
+
 }; //main scope object
+
+ma._loadFiles(ma._getMyPath());
+
+/**
+ * Initialization after page is loaded
+ * window.onload is alias for body.onload; its just available before body is created ;)
+ */
+window.onload = function() {
+	ma._init();
+};
