@@ -37,10 +37,10 @@ ma = {
 		ma._filePath = path;
 		ma.loadJS('external/printf');
 		ma.loadJS('external/ExtJS3core/ext-core');
-		ma.loadJS('framework/base');
+		ma.loadJS('framework/events');
+		ma.loadJS('framework/Base');
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
-		ma.loadJS('framework/events');
 	},
 	
 	/**
@@ -97,7 +97,7 @@ ma = {
 			}
 		} //for each init method
 		//after all init methods are executed...
-		if (0 == ma._onInit.length) {
+		if (0 === ma._onInit.length) {
 			//disable interval if nothing is left to init
 			if (ma._onInit.waiting) {
 				window.clearInterval(ma._onInit.waiting);

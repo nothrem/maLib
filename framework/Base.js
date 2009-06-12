@@ -33,20 +33,24 @@
 ma.Base = function() {
  	ma.Base.superclass.constructor.apply(this, arguments);
 	this.isReady = true;
+	this._isInstance = true;
 	
-	this.addEvents({
-		
-	});
+	this.addEvents('testFire');
+	
+	//add test listener
+	this.addListener(ma.Base.events.testFire, this._testListener, this);
 };
 
-Ext.extend(ma.Base, Ext.util.Observable, {
+Ext.extend(ma.Base, ma.Observable, {
 	/**
 	 * @scope ma.Base
 	 */
 	// static properties
 	_isMaFx: true,
+	_isInstance: false,
 	_className: 'Base',
 	_fullName: 'ma.Base',
+	_class: ma.Base,
 	
 	/**
 	 * Merges this object with given values (deep merge)
@@ -65,11 +69,9 @@ Ext.extend(ma.Base, Ext.util.Observable, {
 	 */
 	clone: function(values) {
 		return ma.util.clone(this, values);
-	}
+	},
+	
+	_testListener: function(test1, test2) {
+		ma.util.alert('Testing event observed! Called with params: "%s", "%s"', test1, test2);
+	} 	
 });
-
-Ext.apply(ma.Base, {
-	_className: '[class]Base',
-	_fullName: '[class]ma.Base'
-});
-

@@ -172,7 +172,7 @@ window.printf = function(fstring /* other arguments are accessed via arguments p
 	};
 	var farr = fstring.split('%');
 	var retstr = farr[0];
-	var fpRE = /^([-+ #]*)(\d*)\.?(\d*)([cdieEfFgGosuxX])(.*)$/;
+	var fpRE = /^([\-+ #]*)(\d*)\.?(\d*)([cdieEfFgGosuxX])(.*)$/;
 	var fps;
 	for (var i = 1; i < farr.length; i++) {
 		fps = fpRE.exec(farr[i]);
