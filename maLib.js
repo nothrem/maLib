@@ -35,12 +35,15 @@ ma = {
 	_loadFiles: function(path){
 		path = path || '';
 		ma._filePath = path;
+		//load external files and frameworks
 		ma.loadJS('external/printf');
 		ma.loadJS('external/ExtJS3core/ext-core');
-		ma.loadJS('framework/events');
-		ma.loadJS('framework/Base');
+		//load internal files
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
+		ma.loadJS('framework/events');
+		ma.loadJS('framework/Base');
+		ma.loadJS('framework/Element');
 	},
 	
 	/**

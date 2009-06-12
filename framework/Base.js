@@ -31,14 +31,11 @@
  * @return [void]
  */
 ma.Base = function() {
+	ma.console.log('Creating new instance of class %s', this._className);	
  	ma.Base.superclass.constructor.apply(this, arguments);
 	this.isReady = true;
 	this._isInstance = true;
 	
-	this.addEvents('testFire');
-	
-	//add test listener
-	this.addListener(ma.Base.events.testFire, this._testListener, this);
 };
 
 Ext.extend(ma.Base, ma.Observable, {
@@ -69,9 +66,5 @@ Ext.extend(ma.Base, ma.Observable, {
 	 */
 	clone: function(values) {
 		return ma.util.clone(this, values);
-	},
-	
-	_testListener: function(test1, test2) {
-		ma.util.alert('Testing event observed! Called with params: "%s", "%s"', test1, test2);
 	} 	
 });
