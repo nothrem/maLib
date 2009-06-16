@@ -7,7 +7,7 @@
  *
  * Author does not guarantee any support and takes no resposibility for any damage.
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
- * 
+ *
  * This library may contain whole, parts or modifications of third party files,
  * libraries, frameworks or other code, which are published under one of 'free'
  * licences. See head of main file or file LICENCE.* .
@@ -142,18 +142,18 @@ ma.util = {
 
 		return clone;
 	},
-	
+
 	/**
 	 * returns value of GET parameter from page's URL
-	 * 
+	 *
 	 * @param  [String] name of the param to get
 	 * @return [String] value of the param or empty string if param does not exist
-	 * 
+	 *
 	 * @author NetLobo.com (optimized by nothrem)
 	 */
 	getUrlParam: function(param){
 		var regexS, regex, value;
-		
+
 		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
 		regexS = "[\\?&]" + name + "=([^&#]*)";
 		regex = new RegExp(regexS);

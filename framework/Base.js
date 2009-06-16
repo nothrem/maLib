@@ -7,7 +7,7 @@
  *
  * Author does not guarantee any support and takes no resposibility for any damage.
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
- * 
+ *
  * This library may contain whole, parts or modifications of third party files,
  * libraries, frameworks or other code, which are published under one of 'free'
  * licences. See head of main file or file LICENCE.* .
@@ -17,6 +17,8 @@
  * Required parts:
  *   Ext
  *   Ext.util.Observable
+ *   ma.console
+ *   ma.util
  * Optional parts:
  *   NONE
  */
@@ -24,18 +26,18 @@
 /**
  * @constructor
  * @extends Ext.util.Observable
- * 
+ *
  * Creates new base object for maFx
- * 
+ *
  * @param  [void]
  * @return [void]
  */
 ma.Base = function() {
-	ma.console.log('Creating new instance of class %s', this._className);	
- 	ma.Base.superclass.constructor.apply(this, arguments);
+	ma.console.log('Creating new instance of class %s', this._className);
+	ma.Base.superclass.constructor.apply(this, arguments);
 	this.isReady = true;
 	this._isInstance = true;
-	
+
 };
 
 Ext.extend(ma.Base, ma.Observable, {
@@ -48,10 +50,10 @@ Ext.extend(ma.Base, ma.Observable, {
 	_className: 'Base',
 	_fullName: 'ma.Base',
 	_class: ma.Base,
-	
+
 	/**
 	 * Merges this object with given values (deep merge)
-	 * 
+	 *
 	 * @param  values [Object] object with properties
 	 * @return [void]
 	 */
@@ -60,11 +62,11 @@ Ext.extend(ma.Base, ma.Observable, {
 	},
 	/**
 	 * Creates new deep clone of this object
-	 * 
+	 *
 	 * @param  values [Object] Values to change
 	 * @return [Object] new clone
 	 */
 	clone: function(values) {
 		return ma.util.clone(this, values);
-	} 	
+	}
 });

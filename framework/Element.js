@@ -7,17 +7,26 @@
  *
  * Author does not guarantee any support and takes no resposibility for any damage.
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
- * 
+ *
  * This library may contain whole, parts or modifications of third party files,
  * libraries, frameworks or other code, which are published under one of 'free'
  * licences. See head of main file or file LICENCE.* .
  */
 
 /**
+ * Required parts:
+ *   ma.Base
+ *   Ext
+ *   Ext.util.Observable
+ * Optional parts:
+ *   NONE
+ */
+
+/**
  * @constructor
- * 
+ *
  * creates new DOM element wrapper object
- * 
+ *
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
  * @return [Object] new element wrapper, existing wrapper of the element or null on error
  */
@@ -30,8 +39,8 @@ ma.Element = function(domElement){
 		return domElement._ma_wrapper;
 	}
 
- 	ma.Element.superclass.constructor.apply(this, arguments);
-	
+	ma.Element.superclass.constructor.apply(this, arguments);
+
 	this.addEvents(
 		'onClick', 'onDblClick',
 		'onMouseDown', 'onMouseUp', 'onMouseMove', 'onMouseOver', 'onMouseOut',
@@ -39,7 +48,7 @@ ma.Element = function(domElement){
 		'onResize', 'onMove',
 		'onFocus', 'onBlur', 'onSelect',
 		'onChange');
-		
+
 	if (!domElement instanceof HTMLElement) { //we only get element configuration
 		config = domElement || {};
 		if ('string' === typeof config) {
@@ -47,14 +56,14 @@ ma.Element = function(domElement){
 				tagName: config
 			};
 		}
-		
+
 		if (ma.isDefined(config.id)) {
 			if (document.getElementById(config.id)) {
 				ma.console.error('Internal error: Duplicate Element; id "%s% is already used!', config.id);
 				return null;
 			}
 		}
-		
+
 		domElement = document.createElement(config.tagName || 'div');
 
 		//clone the config
@@ -62,21 +71,21 @@ ma.Element = function(domElement){
 			id: config.id || 'element_' + (ma.Element._lastId++)
 		}); //clone config
 		delete newConfig.tagName;
-		ma.util.merge(domElement, newConfig);		
+		ma.util.merge(domElement, newConfig);
 	}
-	
+
 	this.dom = domElement; //reference to wrapped object
 	domElement._ma_wrapper = this;  //backward reference for wrapper
-	
+
 	//register new element and return it
 	ma.Element._register(this);
-	
+
 	//set other Element's properties
 	this.merge({
 		id:      domElement.id,
 		tagName: domElement.tagName
 	});
-	
+
 }; //ma.Element
 
 Ext.extend(ma.Element, ma.Base, {
@@ -92,7 +101,7 @@ Ext.extend(ma.Element, ma.Base, {
 	/**
 	 * @private
 	 * registers new Element into global list of elements
-	 * 
+	 *
 	 * @params [void]
 	 * @return [void]
 	 */
@@ -102,17 +111,17 @@ Ext.extend(ma.Element, ma.Base, {
 
 	/**
 	 * sets object properties to given values
-	 * 
+	 *
 	 * @param  [Object] {property:value} pairs to set (value can be object with another pairs)
 	 * @return [void]
 	 */
 	set: function(config) {
 		this.merge(config);
 	}, //set()
-	
+
 	/**
 	 * creates new element from given config and adds it to the end of childs of this element
-	 * 
+	 *
 	 * @param  [Object/Array of Objects] element configuration or list of element configurations
 	 *              .tagName   [String] HTML type
 	 *              any other value for custom properties
@@ -130,7 +139,7 @@ Ext.extend(ma.Element, ma.Base, {
 		if (!config || Array !== config.constructor){
 			config = [config]; //create array from single object
 		}
-		
+
 		//add element(s)
 		for (i = 0, cnt = config.length; i < cnt; i++) {
 			cfg = config[i];
@@ -152,7 +161,7 @@ Ext.extend(ma.Element, ma.Base, {
 			elements.push(newEl);
 			newEl.parent = this; //backward reference
 		}
-		
+
 		//return value
 		switch (elements.length) {
 			case 0:  return null;
@@ -160,20 +169,20 @@ Ext.extend(ma.Element, ma.Base, {
 			default: return elements;
 		}
 	}, //add()
-	
+
 	/**
 	 * inserts new Element before given Element
-	 * 
+	 *
 	 * @param  [Object] element configuration (tagName for HTML type, any other for properties)
 	 * @param  [Element] reference to Element the new one should be put before
 	 * @return [Element/Array of Elements] reference to new object (for single object) or array of objects
-	 * 
+	 *
 	 * @note This is only alias for add() method, but add() should be used only for adding to the end!
 	 */
 	insert: function(config, insertBefore) {
 		return this.add(config, insertBefore);
 	}, //insert()
-	
+
 	/**
 	 * returns wrapper of parent element
 	 */
@@ -181,9 +190,9 @@ Ext.extend(ma.Element, ma.Base, {
 		if (this._parent) {
 			return this._parent;
 		}
-		
+
 		var parent = this.dom.parentNode;
-		
+
 		if (parent) {
 			if (parent._ma_wrapper) {
 				//parent element is already wrapped
@@ -198,16 +207,16 @@ Ext.extend(ma.Element, ma.Base, {
 		else {
 			//this element does not have a parent; its either single element or Root element
 			return null;
-		} 
+		}
 	}, //getParent()
-	
+
 	/**
 	 * returns elements's child by id
-	 * 
+	 *
 	 * @param  [Object/Integer] id of the child you're looking for; also works as alias for Element.getChildByIndex()
 	 * @param  [Object] (optional, default: false) true = tree search (search child of any level/generation); false searches only direct child; ignored when first param is Integer
 	 * @return [Element] reference to child; undefined if not found (e.g. no such element, it's not child or any error)
-	 * 
+	 *
 	 * note: for tree seach this method can search for parent-child bond only within tree created by Elements.
 	 *       if there is any DOMelement (non-Element) in the tree, the bond will be broken (see Element.isElement)
 	 */
@@ -216,21 +225,21 @@ Ext.extend(ma.Element, ma.Base, {
 			el,      //reference to child element
 			parent,  //reference to child's parent (=> when it's equal to *this*, the element is child of this element)
 			x;
-			
+
 		if ('number' === typeof id) { //for index use the other method
 			return this.getChildByIndex(id);
 		}
-		
+
 		el = $.Element.get(id);
 		if (!el) { //no such element
 			return undefined;
 		}
-		
+
 		parent = el.getParent();
 		if (!parent) { //no parent => no search
 			return undefined;
 		}
-		
+
 		if (useTreeSearch) {
 			while (true) { //infinite loop - it can be really infinite if there is cycle in the parent-child structure!!! (but infinity is prevented below)
 				if (!parent) { //this element does not have a parent - no more search
@@ -245,24 +254,24 @@ Ext.extend(ma.Element, ma.Base, {
 				parent = parent.getParent; //go to next level
 			} //while (infinite loop)
 		}
-		
+
 		//simple search -> parent's id must equal to this own id
 		return (parent.id === this.id) ? el : undefined;
 	}, //getChild()
-	
+
 	/**
 	 * returns n-th child of this element
-	 * 
+	 *
 	 * @param  [Number] index of the child
 	 * @return [Object] reference to child; undefined if element does not have such child
 	 */
 	getChildByIndex: function(index) {
 		return (this.dom.childNodes) ? this.dom.childNodes[index] : undefined;
 	}, //getChildByIndex()
-	
+
 	/**
 	 * moves element from one DOM place to another (i.e. changes parent)
-	 *  
+	 *
 	 * @param  [Element/String] either parent or its id
 	 * @return [void]
 	 */
@@ -281,21 +290,21 @@ Ext.extend(ma.Element, ma.Base, {
 			ma.console.error('Unsupported parent node in %s.moveTo()', this._fullName);
 			return;
 		}
-		
+
 		parent.dom.appendChild(this);
-		
+
 		this._parent = parent; //change parent for case it was already cached
 	},
-	
+
 	/**
 	 * removes direct child of this element
-	 * 
+	 *
 	 * @param  [Element/String] id of the child
-	 * @return [Boolean/Element] removed element or False if the element does not exist or isn't child of this element 
+	 * @return [Boolean/Element] removed element or False if the element does not exist or isn't child of this element
 	 */
 	remove: function(child) {
 		var parent;
-		
+
 		if (child instanceof ma.Element) {
 			//nothing, just filter this case out
 		}
@@ -309,7 +318,7 @@ Ext.extend(ma.Element, ma.Base, {
 			ma.console.error('Unsupported child node in %s.remove()', this._fullName);
 			return;
 		}
-		
+
 		if (child) {
 			parent = child.getParent();
 			if (parent && parent.id === this.id) {
@@ -320,10 +329,10 @@ Ext.extend(ma.Element, ma.Base, {
 		//child does not exist or isn't child of this one element
 		return false;
 	},
-	
+
 	/**
 	 * removes all element's children
-	 * 
+	 *
 	 * @param  [void]
 	 * @return [void]
 	 */
@@ -332,22 +341,22 @@ Ext.extend(ma.Element, ma.Base, {
 			el = this.dom,
 			child = el.firstChild,
 			wrapper;
-			
+
 		while (child) {
 			wrapper = child._ma_wrapper;
 			if (wrapper) {
 				//this child has been wrapped
-				delete wrapper._parent; //remove reference to parent -> helps GC to remove the object from memory 
+				delete wrapper._parent; //remove reference to parent -> helps GC to remove the object from memory
 			}
 			el.removeChild(child);
-			
+
 			child = el.firstChild; //go to next child
 		} //while (for each child)
 	}, //removeAll()
-	
+
 	/**
 	 * returns info about element (e.g. width and height)
-	 * 
+	 *
 	 * @param  [void]
 	 * @return [Object]
 	 *            .width  [Number]
@@ -365,20 +374,20 @@ Ext.extend(ma.Element, ma.Base, {
 			top: dom.offsetTop
 		};
 	}, //getInfo()
-	
+
 	/**
 	 * returns true if element is hidden
-	 * 
+	 *
 	 * @param  [void]
 	 * @return [Boolean] True if element is hidden (display='none')
 	 */
 	isHidden: function() {
 		return ('none' === this.style.display);
 	}, //isHidden()
-	
+
 	/**
 	 * shows the element; sets last display mode before hiding
-	 * 
+	 *
 	 * @param  [void]
 	 * @return [Boolean] true is element was hidden before
 	 */
@@ -389,10 +398,10 @@ Ext.extend(ma.Element, ma.Base, {
 		}
 		return false;
 	}, //show()
-	
+
 	/**
 	 * hides the element from DOM; to show it again with same display mode use show() method
-	 * 
+	 *
 	 * @param  [void]
 	 * @return [Boolean] true if element was visible before
 	 */
@@ -414,14 +423,14 @@ Ext.apply(ma.Element, {
 	/**
 	 * @scope ma.Element
 	 */
-	
+
 	/**
 	 * @private
 	 * cache for all created elements (used by ma.Element.get())
 	 */
 	_cache: {},
 
-	_lastId: 0, //use to generate element ids as e.g. 'element_1'
+	_lastId: 0, //used to generate element ids (e.g. 'element_1')
 
 	_register: function(element) {
 		ma.Element._cache[element.id] = element;
@@ -429,13 +438,13 @@ Ext.apply(ma.Element, {
 
 	/**
 	 * return element with given ID
-	 * 
+	 *
 	 * @param  [String] element id
 	 * @return [Element]
 	 */
 	get: function(elementId) {
 		var el = $.element._cache[elementId];
-		
+
 		if (el) {
 			return el;
 		}

@@ -7,7 +7,7 @@
  *
  * Author does not guarantee any support and takes no resposibility for any damage.
  * You use this code at your own risk. You can modify it as long as this header is present and unchaged!
- * 
+ *
  * This library may contain whole, parts or modifications of third party files,
  * libraries, frameworks or other code, which are published under one of 'free'
  * licences. See head of main file or file LICENCE.* .
@@ -45,7 +45,7 @@ ma = {
 		ma.loadJS('framework/Base');
 		ma.loadJS('framework/Element');
 	},
-	
+
 	/**
 	 * @private
 	 * Initializes framework
@@ -54,7 +54,7 @@ ma = {
 	 * @return [void]
 	 */
 	_init: function(){
-		//ma can init only when Ext is ready and the document body exists (i.e. 
+		//ma can init only when Ext is ready and the document body exists
 		if (ma.isDefined('window.Ext')) {
 			if (ma.isDefined('window.document.body', true)) {
 				ma._isReady = true; //tells that page is initialased and ready for developer interaction
@@ -69,13 +69,13 @@ ma = {
 			ma._waitForExt();
 		}
 	},
-	
+
 	/**
 	 * @private
 	 * List of methods to be executed after initialization if completed
 	 */
 	_onInit: [],
-	
+
 	/**
 	 * Override this method to create method that is called after library is ready
 	 * This should be the method to use to create or alter your page instead of body.onload
@@ -86,7 +86,7 @@ ma = {
 	onReady: function(){
 		ma.console.warn('It is recommended to create your own ma.onReady handler!');
 	},
-	
+
 	/**
 	 * @private
 	 * runs onInit functions
@@ -107,7 +107,7 @@ ma = {
 			}
 		}
 	},
-	
+
 	/**
 	 * return true when library is initialized
 	 *
@@ -117,7 +117,7 @@ ma = {
 	isReady: function() {
 		return (true === ma._isReady) && (true === Ext.isReady);
 	},
-	
+
 	/**
 	 * @private
 	 * tests if given namespace if defined
@@ -134,12 +134,12 @@ ma = {
 			scope = window;
 			path.shift(); //delete 'window' from the array
 		}
-		else 
+		else
 			if ('Ext' === path[0]) {
 				scope = Ext;
 				path.shift(); //delete 'window' from the array
 			}
-			else 
+			else
 				if ('ma' === path[0]) {
 					scope = ma;
 					path.shift(); //delete 'ma' from the array
@@ -147,17 +147,17 @@ ma = {
 				else {
 					scope = this;
 				}
-		
+
 		for (var i = 0, c = path.length; i < c; i++) {
 			scope = scope[path[i]];
 			if (undefined === scope || (ignoreNull && null === scope)) {
 				return path[i];
 			} //else this namespace exists and we can test next part of path
 		}
-		
+
 		return ''; //empty string means that given namespace exists
 	},
-	
+
 	/**
 	 * tests if given namespace if defined
 	 *
@@ -173,7 +173,7 @@ ma = {
 	isDefined: function(path, ignoreNull){
 		return '' === ma._isDefined.apply(this, arguments);
 	},
-	
+
 	/**
 	 * registers any function to be executed the moment framework is initialized
 	 *
@@ -199,11 +199,11 @@ ma = {
 				}
 				return true;
 			}
-			
+
 			ma._onInit.push(initFunction);
 			return false;
 		}
-		
+
 		ma.console.error('Cannot use non-function for initialization');
 		return null;
 	}, //registerInitFunction()
@@ -218,9 +218,9 @@ ma = {
 		if ('function' !== typeof initFunction) {
 			return true;
 		}
-		
+
 		var required = initFunction._initRequired, name = initFunction._name;
-		
+
 		if ('string' === typeof required && !ma.isDefined(required)) {
 			ma.console.log('Init method ' + name + ' is waiting for ' + required);
 			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
@@ -232,7 +232,7 @@ ma = {
 		initFunction.call(window); //call as function in the scope of window
 		return true;
 	},
-	
+
 	/**
 	 * load JavaScript file into HTML head
 	 * !can be called only from script within HTML's HEAD or BODY (see ma.ajax.request::isJS for later JS loading)
@@ -272,14 +272,14 @@ ma = {
 			window.setTimeout(ma._waitForExt, 10);
 		}
 	},
-	
+
 	_getMyPath: function() {
 		var
 			head = document.getElementsByTagName('HEAD')[0],
 			regex = /src=\"(.*)\/maLib\.js\"/g,
 			path = regex.exec(head.innerHTML);
-			
-		return (path && path[1]) ? path[1] : ''; 
+
+		return (path && path[1]) ? path[1] : '';
 	} //_getMyPath
 
 }; //main scope object
