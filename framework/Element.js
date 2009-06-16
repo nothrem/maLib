@@ -24,16 +24,38 @@
 
 /**
  * @constructor
- *
  * creates new DOM element wrapper object
  *
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
  * @return [Object] new element wrapper, existing wrapper of the element or null on error
+ *
+ * @event onHtmlLoaded     fires when an Element has loaded its content from server (see ma.Element.getContent())
+ *           <param>   [ma.Element]  instance of the Element that got new content
+ *
+ * @example Possibilities of ma.Element objects
+		<code>
+			//each Element hold two references: one for original DOM element (Element.dom) and Ext.Element objects (Element.ext)
+			// you can use DOM or EXT references directly, but it is recomended to use ma.Element wrapper methods (if they exist)
+
+			//to create new element, you can use object with custom values
+			new ma.Element({
+				tagName: 'span', //this is type of the element; default DIV
+				id: 'my-div',    //this is ID of the element, it must be unique, can be used e.g. for ma.Element.get(); by default its generated to be unique
+			});
+		</code>
  */
 ma.Element = function(domElement){
 	var
 		config, newConfig,
 		parent;
+
+	if (undefined === domElement) {
+		ma.console.error('Undefined element in %s.constructor().', this._fullName);
+	}
+	//if domElement is in fact a ma.Element already, return it (used in some functions for parameter)
+	if (domElement instanceof ma.Element) {
+		return domElement;
+	}
 	//if domElement is already wrapped, return the wrapper
 	if (domElement instanceof HTMLElement && domElement._ma_wrapper instanceof ma.Element) {
 		return domElement._ma_wrapper;
@@ -42,12 +64,14 @@ ma.Element = function(domElement){
 	ma.Element.superclass.constructor.apply(this, arguments);
 
 	this.addEvents(
+		//HTML events
 		'onClick', 'onDblClick',
 		'onMouseDown', 'onMouseUp', 'onMouseMove', 'onMouseOver', 'onMouseOut',
 		'onKeyDown', 'onKeyUp', 'onKeyPress',
 		'onResize', 'onMove',
 		'onFocus', 'onBlur', 'onSelect',
-		'onChange');
+		'onChange'
+	);
 
 	if (!domElement instanceof HTMLElement) { //we only get element configuration
 		config = domElement || {};
@@ -74,8 +98,11 @@ ma.Element = function(domElement){
 		ma.util.merge(domElement, newConfig);
 	}
 
-	this.dom = domElement; //reference to wrapped object
-	domElement._ma_wrapper = this;  //backward reference for wrapper
+	this.dom = domElement;                  //reference to wrapped object
+	domElement._ma_wrapper = this;          //backward reference for wrapper
+
+	this.ext = new Ext.Element(domElement); //create Ext wrapper object
+	this.ext._ma_wrapper = this;            //backward reference for wrapper
 
 	//register new element and return it
 	ma.Element._register(this);
@@ -122,9 +149,7 @@ Ext.extend(ma.Element, ma.Base, {
 	/**
 	 * creates new element from given config and adds it to the end of childs of this element
 	 *
-	 * @param  [Object/Array of Objects] element configuration or list of element configurations
-	 *              .tagName   [String] HTML type
-	 *              any other value for custom properties
+	 * @param  [ma.Element / DOMelement / Object / Array] element, its configuration or list of elements or they configurations
 	 * @param  [RESERVED] see $.Element.insert()
 	 * @return [Element/Array of Elements] reference to new object (for single object) or array of objects
 	 */
@@ -135,7 +160,7 @@ Ext.extend(ma.Element, ma.Base, {
 			newEl,
 			elements = [];
 
-		//fo any non-array, create new Array (even empty for undefined etc.)
+		//for any non-array, create new Array (even empty for undefined etc.)
 		if (!config || Array !== config.constructor){
 			config = [config]; //create array from single object
 		}
@@ -297,12 +322,20 @@ Ext.extend(ma.Element, ma.Base, {
 	},
 
 	/**
+	 * Removes this element from DOM
+	 */
+	remove: function() {
+		this.ext.remove();
+		delete this._parent;
+	},
+
+	/**
 	 * removes direct child of this element
 	 *
 	 * @param  [Element/String] id of the child
 	 * @return [Boolean/Element] removed element or False if the element does not exist or isn't child of this element
 	 */
-	remove: function(child) {
+	removeChild: function(child) {
 		var parent;
 
 		if (child instanceof ma.Element) {
@@ -336,7 +369,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @param  [void]
 	 * @return [void]
 	 */
-	removeAll: function() {
+	removeAllChildren: function() {
 		var
 			el = this.dom,
 			child = el.firstChild,
@@ -365,13 +398,20 @@ Ext.extend(ma.Element, ma.Base, {
 	 *            .top    [Number]
 	 */
 	getInfo: function() {
-		var dom = this.dom;
+		var
+			dom = this.dom,
+			ext = this.ext;
 
 		return {
-			width: dom.clientWidth,
-			height: dom.clientHeight,
-			left: dom.offsettLeft,
-			top: dom.offsetTop
+			width:         ext.getWidth(),
+			contentWidth:  ext.getWidth(true),
+			height:        ext.getHeight(),
+			contentHeight: ext.getHeight(true),
+
+			left:   ext.getLeft(),
+			right:  ext.getRight(),
+			top:    ext.getTop(),
+			bottom: ext.getBottom()
 		};
 	}, //getInfo()
 
@@ -382,38 +422,67 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [Boolean] True if element is hidden (display='none')
 	 */
 	isHidden: function() {
-		return ('none' === this.style.display);
+		return !this.ext.isVisible;
 	}, //isHidden()
 
 	/**
 	 * shows the element; sets last display mode before hiding
 	 *
-	 * @param  [void]
-	 * @return [Boolean] true is element was hidden before
+	 * @param  [Boolean] (optional, default: true) true to show the element, false to hide instead
+	 * @return [void]
 	 */
-	show: function() {
-		if (this.isHidden()) {
-			this.style.display = this._lastDisplayMode || 'block';
-			return true;
+	show: function(show) {
+		if (show) {
+			this.ext.show();
 		}
-		return false;
+		else {
+			this.hide();
+		}
 	}, //show()
 
 	/**
 	 * hides the element from DOM; to show it again with same display mode use show() method
 	 *
-	 * @param  [void]
-	 * @return [Boolean] true if element was visible before
+	 * @param  [Boolean] (optional, default: true) true to hide the element, false to show instead
+	 * @return [void]
 	 */
-	hide: function() {
-		if (this.isHidden()) { //don't hide if already hidden
-			return false;
+	hide: function(hide) {
+		if (hide) {
+			this.ext.hide();
 		}
-		this._lastDisplayMode = this.style.display; //store current display mode
-		this.style.display = 'none'; //hide from DOM
-		return true;
-	}
+		else {
+			this.show();
+		}
+	},
 
+	/**
+	 * loads HTML content from server
+	 *
+	 * @param  [String / Object} either URL of the HTML file or options for dataMiner
+	 *             .object  [String]
+	 *             .method  [String]
+	 *             .params  [Mixed]
+	 *             (note that other values available for ma.ajax.request() are ignored here)
+	 */
+	getContent: function(options) {
+		if ('string' === typeof options) {
+			this.ext.load(options);
+		}
+		else {
+			if (undefined === Ext.Ajax.url) {
+				ma.console.error('Error in %s.getContent(): First you must set dataMiner URL. Use %s.setDefaultParams().', this._fullName, ma.ajax._fullName);
+			}
+			this.ext.load({
+				url: Ext.Ajax.url,
+				params: {
+					object: options.object,
+					method: options.method,
+					params: options.params ? this.jsonEncode(options.params) : undefined, //undefined would be converted to "null" which is not acceptable
+					token : ma.Cookie.get('token')
+				}
+			}); //this.ext.load();
+		}
+	}
 }); //extend(ma.Element)
 
 /**
@@ -443,7 +512,7 @@ Ext.apply(ma.Element, {
 	 * @return [Element]
 	 */
 	get: function(elementId) {
-		var el = $.element._cache[elementId];
+		var el = ma.Element._cache[elementId];
 
 		if (el) {
 			return el;
