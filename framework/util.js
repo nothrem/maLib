@@ -99,20 +99,24 @@ ma.util = {
 	 * @return [Boolean] false on any error, true when all values are set OK
 	 */
 	merge: function(object, values){
-		var property, value, error = false;
+		var
+			is = ma.util.is,
+			error = false,
+			property,
+			value;
 
-		if (!object) {
+		if (is(object,'empty')) {
 			return false;
 		}
 
-		if ('object' === typeof values && Array !== values.constructor) {
+		if (is(values, Object) && !is(values, Array)) {
 			for (property in values) {
 				value = values[property];
-				if ('object' === typeof value && Array !== value.constructor) {
-					if ('object' !== typeof object[property]) {
+				if (is(value, Object) & !is(value, Array)) {
+					if (!is(object[property], Object)) {
 						object[property] = {}; //ensure property is defined as object
 					}
-					error = ma.util.setProperties(value, object[property]) || error;
+					error = ma.util.merge(object[property], value) || error;
 				}
 				else {
 					object[property] = value;
@@ -184,12 +188,6 @@ ma.util = {
 		if (null === type) {
 			return null === value;
 		}
-		if ('empty' === type.toLowerCase) {
-			return Ext.isEmpty(value);
-		}
-		if ('zero' === type.toLowerCase) {
-			return Ext.isEmpty(value) || 0 === value || false === value;
-		}
 		if (String === type ) {
 			return 'string' === typeof value || value instanceof String;
 		}
@@ -210,6 +208,14 @@ ma.util = {
 		}
 		if (Ext.isFunction(type)) {
 			return value instanceof type;
+		}
+		if (ma.util.is(type, String)) {
+			if ('empty' === type.toLowerCase()) {
+				return Ext.isEmpty(value);
+			}
+			if ('zero' === type.toLowerCase()) {
+				return Ext.isEmpty(value) || 0 === value || false === value;
+			}
 		}
 		//unknown type, consider it as direct value
 		return value == type;

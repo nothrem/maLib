@@ -143,7 +143,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [void]
 	 */
 	set: function(config) {
-		this.merge(config);
+		ma.util.merge(this.dom, config);
 	}, //set()
 
 	/**
@@ -432,7 +432,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [void]
 	 */
 	show: function(show) {
-		if (show) {
+		if (false !== show) {
 			this.ext.show();
 		}
 		else {
@@ -447,7 +447,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [void]
 	 */
 	hide: function(hide) {
-		if (hide) {
+		if (false !== hide) {
 			this.ext.hide();
 		}
 		else {

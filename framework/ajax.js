@@ -39,7 +39,23 @@
  *          .response    [String]
  *          .success     [Boolean] always false
  *          return       [Boolean] return false to stop afterRequest event
-	},
+ *
+ * @example request callback
+	<code>
+		function(response, success, params) {
+			if (!success) {
+				ma.console.error('Error recieving response!');
+				return;
+			}
+
+			var json = response.json;
+
+			value1 = json.value1;
+			value2 = json.value2;
+
+			this.set(value1, value2, params.value3);
+		}
+	</code>
  */
 ma._Ajax = function() {
 	ma._Ajax.superclass.constructor.apply(this, arguments);
