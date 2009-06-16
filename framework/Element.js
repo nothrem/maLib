@@ -150,7 +150,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * creates new element from given config and adds it to the end of childs of this element
 	 *
 	 * @param  [ma.Element / DOMelement / Object / Array] element, its configuration or list of elements or they configurations
-	 * @param  [RESERVED] see $.Element.insert()
+	 * @param  [RESERVED] see ma.Element.insert()
 	 * @return [Element/Array of Elements] reference to new object (for single object) or array of objects
 	 */
 	add: function(config, insertBefore) {
@@ -168,7 +168,7 @@ Ext.extend(ma.Element, ma.Base, {
 		//add element(s)
 		for (i = 0, cnt = config.length; i < cnt; i++) {
 			cfg = config[i];
-			newEl = new $.Element(cfg);
+			newEl = new ma.Element(cfg);
 			if (insertBefore) {
 				if (insertBefore instanceof ma.Element) {
 					this.dom.insertBefore(newEl, insertBefore.dom);
@@ -255,7 +255,7 @@ Ext.extend(ma.Element, ma.Base, {
 			return this.getChildByIndex(id);
 		}
 
-		el = $.Element.get(id);
+		el = ma.Element.get(id);
 		if (!el) { //no such element
 			return undefined;
 		}
@@ -348,7 +348,7 @@ Ext.extend(ma.Element, ma.Base, {
 			child = new ma.Element(child);
 		}
 		else {
-			ma.console.error('Unsupported child node in %s.remove()', this._fullName);
+			ma.console.error('Unsupported child node in %s.removeChild()', this._fullName);
 			return;
 		}
 
@@ -356,7 +356,7 @@ Ext.extend(ma.Element, ma.Base, {
 			parent = child.getParent();
 			if (parent && parent.id === this.id) {
 				delete child._parent;
-				return this.removeChild(el);
+				return this.dom.removeChild(child.dom);
 			}
 		}
 		//child does not exist or isn't child of this one element

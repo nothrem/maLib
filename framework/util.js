@@ -158,7 +158,67 @@ ma.util = {
 		regexS = "[\\?&]" + name + "=([^&#]*)";
 		regex = new RegExp(regexS);
 		value = regex.exec(window.location.href);
-		return (null === value) ? "" : results[1];
-	} //getUrlParam
+		return (null === value) ? "" : value[1];
+	}, //getUrlParam
+
+	/**
+	 * checks type of a value
+	 *
+	 * @param  [Mixed] value you want to check
+	 * @param  [Mixed] type you want to check (available values check below)
+	 *            undefined                = value is undefined (note that is() results to true since both params are undefined and it means equal)
+	 *            null                     = value is null (i.e. reference to NULL)
+	 *            [String] 'empty'         = undefined, null, empty array ([]) or empty string (''); NOT 0 (zero), false, empty object ({}) or empty function (ma.util.nop)
+	 *            [String] 'zero'          = same as 'empty' including 0 (zero) and false
+	 *            String, Number, Boolean  = object of this type (e.g. new String('A')) or primitive value of this type ('A')
+	 *            Array, Function          = object of this type (e.i. for Array = new Array() or []; for Function = function() {})
+	 *            Object                   = any object (either any of mentioned above EXCEPT Function and NULL!!)
+	 *            [Function] <Class>       = if you pass a constructor function, it will check that value is instance of this class
+	 *            [Mixed] <any value>      = any other value will check that value is equal to this value (e.g. is('10', 10.0); returns true as the values are equal)
+	 * @return [Boolean] true when value equals to given type
+	 */
+	is: function(value, type) {
+		if (undefined === type) {
+			return undefined === value;
+		}
+		if (null === type) {
+			return null === value;
+		}
+		if ('empty' === type.toLowerCase) {
+			return Ext.isEmpty(value);
+		}
+		if ('zero' === type.toLowerCase) {
+			return Ext.isEmpty(value) || 0 === value || false === value;
+		}
+		if (String === type ) {
+			return 'string' === typeof value || value instanceof String;
+		}
+		if (Number === type ) {
+			return 'number' === typeof value || value instanceof Number;
+		}
+		if (Boolean === type ) {
+			return 'boolean' === typeof value || value instanceof Boolean;
+		}
+		if (Array === type ) {
+			return true === Ext.isArray(value);
+		}
+		if (Function === type ) {
+			return true === Ext.isFunction(value);
+		}
+		if (Object === type ) {
+			return true === Ext.isObject(value);
+		}
+		if (Ext.isFunction(type)) {
+			return value instanceof type;
+		}
+		//unknown type, consider it as direct value
+		return value == type;
+	}, //is()
+
+	/**
+	 * @private
+	 * Same as eval(), just a way to prevent JSlint from reporting eval where its really needed
+	 */
+	_eval: eval
 
 };

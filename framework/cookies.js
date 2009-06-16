@@ -305,7 +305,7 @@ Ext.extend(ma.Cookie, ma.Base, {
 	 * @return [String] string value of cookie or '[Object]' string when cookie contains Object
 	 */
 	toString: function() {
-		if ('object' === typeof values) {
+		if ('object' === typeof this._value) {
 			return '[Object]';
 		}
 		else {

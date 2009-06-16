@@ -197,10 +197,9 @@ Ext.extend(ma._Ajax, ma.Base, {
 			res;
 
 		if (success) {
-			responseText = response.responseText;
 			res = {
-				text: responseText,
-				json: ajax.jsonDecode(responseText),
+				text: response.responseText,
+				json: ajax.jsonDecode(response.responseText),
 				headers: response.getResponseHeader,
 				status: {
 					code: response.status,
@@ -327,8 +326,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 		callbackParams.url = options.url;
 
 		if (success) {
-			responseText = response.responseText;
-			res = eval(responseText);
+			res = ma.util._eval(response.responseText);
 			res = {
 				value: res,
 				headers: response.getResponseHeader,
