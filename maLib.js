@@ -37,8 +37,7 @@ ma = {
 		ma._filePath = path;
 		//load external files and frameworks
 		ma.loadJS('external/printf');
-		ma.loadJS('external/ExtJS3core/ext-core');
-		ma.loadJS('external/ExtJS3core/ext-json');
+		ma.loadJS('external/ExtJs3core/ext-core');
 		//load internal files
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
