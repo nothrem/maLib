@@ -21,6 +21,14 @@
  */
 ma.console = {
 	/**
+	 * cache for methods
+	 */
+	_cache: {
+		time: {},
+		count: {},
+		profile: {}
+	},
+	/**
 	 * formats message with placeholders
 	 *
 	 * @param  [String] string with format placeholders
@@ -122,18 +130,57 @@ ma.console = {
 	},
 
 	/**
-	 * empty function
+	 * counts number of milisecons between time() and timeEnd()
+	 *
+	 * @param  [String] name of timer (use same for timeEnd() to get result)
+	 * @return [Number] current time for the timer (usable to get 'lap' time)
 	 */
-	time: function(message){},
+	time: function(timer){
+		var cache = ma.console._cache.count;
+
+		if (undefined === cache[timer]) {
+			cache[timer] = new Date(); //get current time
+		}
+
+		return ma.util.diffTime(cache[timer]);
+	},
 	/**
 	 * empty function
 	 */
-	timeEnd: function(message) {},
+	timeEnd: function(timer) {
+		var
+			cache = ma.console._cache.count,
+			time = ma.util.diffTime(cache[timer]);
+
+		cache[timer] = undefined; //reset the timer
+
+		return time;
+	},
 
 	/**
-	 * empty function
+	 * counts number of calls
 	 */
-	count: function(message) {},
+	count: function(counter) {
+		var
+			cache = ma.console._cache.count,
+			count = cache[counter];
+
+		cache[counter] = (cache[counter] || 0) + 1;
+
+		return count;
+	},
+	/**
+	 * resets counter
+	 */
+	countEnd: function(counter) {
+		var cache = ma.console._cache.count,
+			count = cache[counter];
+
+		cache[counter] = 0;
+
+		return count;
+	},
+
 	/**
 	 * empty function
 	 */
@@ -141,7 +188,9 @@ ma.console = {
 	/**
 	 * empty function
 	 */
-	profile: function(message) {},
+	profile: function(profile) {
+		ma.console.warn('Profiling is not supported on this browser'); //only Firefox with firebug can profile
+	},
 	/**
 	 * empty function
 	 */

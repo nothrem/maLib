@@ -59,12 +59,12 @@ ma = {
 		//ma can init only when Ext is ready and the document body exists
 		if (ma.isDefined('window.Ext')) {
 			if (ma.isDefined('window.document.body', true)) {
-				ma._isReady = true; //tells that page is initialased and ready for developer interaction
-				ma.registerInitFunction(ma.onReady, '', 'onReady');
+				ma.registerInitFunction(ma.onReady, '', 'onReady'); //putOnReady as last method to be executed
 				ma._onInitExecuter();
+				ma._isReady = true; //tells that page is initialased and ready for developer interaction
 			}
 			else {
-				window.setTimeout(ma._startInit, 10);
+				window.setTimeout(ma._init, 10);
 			}
 		}
 		else {
@@ -97,7 +97,7 @@ ma = {
 		var i, cnt, initFunction;
 		for (i = 0, cnt = ma._onInit.length; i < cnt; i++) {
 			initFunction = ma._onInit[i];
-			if (ma._runInitFunction(initFunction)) {
+			if (ma._runInitFunction(initFunction, i)) {
 				delete ma._onInit[i]; //cannot call non-function
 			}
 		} //for each init method
@@ -194,7 +194,7 @@ ma = {
 			}
 			initFunction._name = name || 'NoName';
 			if (true === ma._isReady) { //framework was already initialized...
-				if (!ma._runInitFunction(initFunction)) {
+				if (!ma._runInitFunction(initFunction, 'post-init')) {
 					//initFunction must wait for required
 					ma._onInit.push(initFunction);
 					return false;
@@ -216,21 +216,23 @@ ma = {
 	 * @param  [Function] reference to initFunction
 	 * @return [Boolean]  true when function was already executed, false for posponed ones
 	 */
-	_runInitFunction: function(initFunction){
+	_runInitFunction: function(initFunction, index){
 		if ('function' !== typeof initFunction) {
 			return true;
 		}
 
+		index = !ma.util.is(index, 'empty') ? ' (index:' + index + ')' : '';
+
 		var required = initFunction._initRequired, name = initFunction._name;
 
 		if ('string' === typeof required && !ma.isDefined(required)) {
-			ma.console.log('Init method ' + name + ' is waiting for ' + required);
+			ma.console.log('Init method ' + name + index + ' is waiting for ' + required);
 			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
 				ma._onInit.waiting = window.setInterval("ma._onInitExecuter()", 500);
 			}
 			return false;
 		}
-		ma.console.log('Init method ' + name + ' is ready to execute');
+		ma.console.log('Init method ' + name + index + ' is ready to execute');
 		initFunction.call(window); //call as function in the scope of window
 		return true;
 	},
@@ -268,7 +270,7 @@ ma = {
 	 */
 	_waitForExt: function(){
 		if (ma.isDefined('window.Ext.isReady') && Ext.isReady) {
-			ma._startInit();
+			ma._init();
 		}
 		else {
 			window.setTimeout(ma._waitForExt, 10);

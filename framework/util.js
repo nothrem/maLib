@@ -222,9 +222,34 @@ ma.util = {
 	}, //is()
 
 	/**
+	 * Counts difference in two times
+	 *
+	 * @param  start [Number / Date] time in miliseconds or Date object
+	 * @param  end   [Number / Date] (optional, default: now) time in miliseconds or Date object
+	 * @return [Number] number of miliseconds between times
+	 */
+	diffTime: function(start, end) {
+		if (!(start instanceof Date)) {
+			start = new Date(start);
+		}
+		if (!(end instanceof Date)) {
+			if (undefined === end) { //Date constructor can't handle undefined value
+				end = new Date();
+			}
+			else {
+				end = new Date(end);
+			}
+		}
+
+		return end - start;
+	}, //diffTime()
+
+	/**
 	 * @private
 	 * Same as eval(), just a way to prevent JSlint from reporting eval where its really needed
+	 * note: new versions of JSlint reports this one as well
 	 */
 	_eval: eval
 
 };
+
