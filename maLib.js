@@ -46,6 +46,7 @@ ma = {
 		ma.loadJS('framework/Element');
 		ma.loadJS('framework/cookies');
 		ma.loadJS('framework/ajax');
+		ma.loadJS('framework/ajaxCache');
 	},
 
 	/**
@@ -122,42 +123,99 @@ ma = {
 
 	/**
 	 * @private
+	 * parses namespace string into array
+	 *
+	 * @param  namespace    [String]
+	 * @param  baseScope    [Object] (optional, default: window) reference to object where to start looking for namespace
+	 * @return [Array] (null for invalid namespace)
+	 *           indexes    [String] parsed namespace path (e.g. ['window', 'document', 'body']
+	 *           .length    [Integer] number of path parts (note that this is standard Array property)
+	 *           .namespace [String] original namespace (e.g. 'window.document.body')
+	 *           .nodeName  [String] name of last node (e.g. 'body')
+	 *           .scopeName [String] namespace w/o/ node (e.g. 'window.document'); empty if namespace is direct child of baseScope
+	 *           .node      [Object] reference to node (e.g. reference to window.document.body); undefined if node is invalid; NULL if node is NULL (in this case error is empty)
+	 *           .scope     [Object] reference to scope (e.g. reference to window.document); undefined if a path part is invalid; NULL if errorName is NULL
+	 *           .errorIndex[Integer] index of path part that is undefined (path part must be defined and not NULL; node must be defined but can be NULL)
+	 *                                is undefined when whole namespace is valid; -1 if only last node is invalid (i.e. scope is valid)
+	 *           .errorName [String]  name of node that is invalid
+	 *                                is undefined when whole namespace is valid
+	 */
+	_getNamespace: function(namespace, baseScope) {
+		if ('string' !== typeof namespace) {
+			return null;
+		}
+
+		var
+			scope = baseScope || window,
+			path = namespace.split('.'),
+			length = path.length,
+			i, part,
+			error, errorMessage;
+
+		path.namespace = namespace;
+		path.nodeName = path[length - 1];
+		path.scopeName = path.slice(0, -1).join('.');
+
+		for (i = 0; i < (length - 1); i++) {
+			part = path[i];
+			scope = scope[part];
+
+			if (undefined === scope || null === scope) {
+				//scope is undefined - write error and quit looking; null is also forbidden for scope as it needs to have child nodes
+				path.errorIndex = i;
+				path.errorName = part;
+				break;
+			}
+		}
+
+		path.scope = scope;
+
+		if (scope) {
+			path.node = scope[path.nodeName];
+
+			if (undefined === path.node) {
+				path.errorIndex = -1;
+				path.errorName = path.nodeName;
+			}
+		}
+		else {
+			path.node = undefined;
+		}
+
+		return path;
+	},
+
+	/**
+	 * @private
 	 * tests if given namespace if defined
 	 *
-	 * @param  [String] path to test (e.g. 'window.document.body' to test existance of body element)
-	 * @param  [String] true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
+	 * @param  namespace [String] path to test (e.g. 'window.document.body' to test existance of body element)
+	 * @param  ignoreNull[String] (optional, default: false) true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
 	 * @return [String] name of namespace part that does not exist, empty string on success
 	 * @see ma.isDefined()
 	 */
-	_isDefined: function(path, ignoreNull){
-		path = path.split('.');
-		var scope;
-		if ('window' === path[0]) {
-			scope = window;
-			path.shift(); //delete 'window' from the array
-		}
-		else
-			if ('Ext' === path[0]) {
-				scope = Ext;
-				path.shift(); //delete 'window' from the array
-			}
-			else
-				if ('ma' === path[0]) {
-					scope = ma;
-					path.shift(); //delete 'ma' from the array
-				}
-				else {
-					scope = this;
-				}
+	_isDefined: function(namespace, ignoreNull){
+		var path;
 
-		for (var i = 0, c = path.length; i < c; i++) {
-			scope = scope[path[i]];
-			if (undefined === scope || (ignoreNull && null === scope)) {
-				return path[i];
-			} //else this namespace exists and we can test next part of path
+		//try to find namespace in window
+		path = ma._getNamespace(namespace);
+
+		//if namespace begins with 'this', look again in current scope
+		if ('this' === path[0]) {
+			path = ma._getNamespace(namespace, this);
 		}
 
-		return ''; //empty string means that given namespace exists
+		//on error, return the name
+		if (undefined !== path.errorIndex) {
+			return path.errorName;
+		}
+
+		//if ignoreError not set and node is null, return error
+		if (true !== ignoreNull && null === path.node) {
+			return path.nodeName;
+		}
+
+		return ''; //everything is defined
 	},
 
 	/**
@@ -277,6 +335,12 @@ ma = {
 		}
 	},
 
+	/**
+	 * Parses server path of ma framework from current HTML code
+	 *
+	 * @param  [void]
+	 * @return [String] server path (e.g. '/fx/maLib/') or empty string on error (e.g. maLib is loaded dynamically, parsed via eval, etc.)
+	 */
 	_getMyPath: function() {
 		var
 			head = document.getElementsByTagName('HEAD')[0],
@@ -284,7 +348,37 @@ ma = {
 			path = regex.exec(head.innerHTML);
 
 		return (path && path[1]) ? path[1] : '';
-	} //_getMyPath
+	}, //_getMyPath
+
+	extend: function(extendClass, superClass, methods) {
+		var path;
+
+		if ('string' === typeof extendClass) { //generate class references
+			path = ma._getNamespace(extendClass);
+			extendClass = path.node;
+
+			methods._className = path.nodeName;
+			methods._fullName  = path.namespace;
+			methods._class     = path.node;
+		}
+		else {
+			if (!methods._className) {
+				throw new Error('Extend: Missing class name. Either call extend with string className param or define own property methods._className');
+			}
+			if (!methods._class) {
+				throw new Error('Extend: Missing class reference. Either call extend with string className param or define own property methods._className');
+			}
+			if (!methods._fullName) {
+				throw new Error('Extend: Missing full name. Either call extend with string className param or define own property methods._className');
+			}
+		}
+
+		if (!extendClass) {
+			throw new Error('Extend: Invalid or undefined class for extension');
+		}
+
+		return Ext.extend(extendClass, superClass, methods);
+	}
 
 }; //main scope object
 

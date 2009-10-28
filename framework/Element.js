@@ -29,7 +29,7 @@
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
  * @return [Object] new element wrapper, existing wrapper of the element or null on error
  *
- * @event onHtmlLoaded     fires when an Element has loaded its content from server (see ma.Element.getContent())
+ * @event onContentLoaded   fires when an Element has loaded its content from server (see ma.Element.getContent())
  *           <param>   [ma.Element]  instance of the Element that got new content
  *
  * @example Possibilities of ma.Element objects
@@ -41,12 +41,14 @@
 			new ma.Element({
 				tagName: 'span', //this is type of the element; default DIV
 				id: 'my-div',    //this is ID of the element, it must be unique, can be used e.g. for ma.Element.get(); by default its generated to be unique
+				children: [],    //array of children (see ma.Element.add()) - by this, you can create a full tree of elements from single array
 			});
 		</code>
  */
 ma.Element = function(domElement){
 	var
 		config, newConfig,
+		children, //used to create element's children if defined
 		parent;
 
 	if (undefined === domElement) {
@@ -70,10 +72,14 @@ ma.Element = function(domElement){
 		'onKeyDown', 'onKeyUp', 'onKeyPress',
 		'onResize', 'onMove',
 		'onFocus', 'onBlur', 'onSelect',
-		'onChange'
+		'onChange',
+
+		//own events
+		'onContentLoaded'
 	);
 
-	if (!domElement instanceof HTMLElement) { //we only get element configuration
+	//Create new element from configuration
+	if (!ma.util.is(domElement, HTMLElement)) { //we only get element configuration
 		config = domElement || {};
 		if ('string' === typeof config) {
 			config = {
@@ -81,11 +87,17 @@ ma.Element = function(domElement){
 			};
 		}
 
-		if (ma.isDefined(config.id)) {
+		if (config.id) {
 			if (document.getElementById(config.id)) {
-				ma.console.error('Internal error: Duplicate Element; id "%s% is already used!', config.id);
+				ma.console.error('Internal error: Duplicate Element; id "%s" is already used!', config.id);
 				return null;
 			}
+		}
+
+		//get elements children
+		if (config.children) {
+			children = config.children;
+			delete config.children;
 		}
 
 		domElement = document.createElement(config.tagName || 'div');
@@ -96,6 +108,7 @@ ma.Element = function(domElement){
 		}); //clone config
 		delete newConfig.tagName;
 		ma.util.merge(domElement, newConfig);
+
 	}
 
 	this.dom = domElement;                  //reference to wrapped object
@@ -104,7 +117,7 @@ ma.Element = function(domElement){
 	this.ext = new Ext.Element(domElement); //create Ext wrapper object
 	this.ext._ma_wrapper = this;            //backward reference for wrapper
 
-	//register new element and return it
+	//register new element
 	ma.Element._register(this);
 
 	//set other Element's properties
@@ -112,6 +125,12 @@ ma.Element = function(domElement){
 		id:      domElement.id,
 		tagName: domElement.tagName
 	});
+	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it trasparent
+
+	//create children
+	if (ma.util.is(children, Array)) {
+		this.add(children);
+	}
 
 }; //ma.Element
 
@@ -161,7 +180,7 @@ Ext.extend(ma.Element, ma.Base, {
 			elements = [];
 
 		//for any non-array, create new Array (even empty for undefined etc.)
-		if (!config || Array !== config.constructor){
+		if (!ma.util.is(config, Array)){
 			config = [config]; //create array from single object
 		}
 
@@ -181,7 +200,7 @@ Ext.extend(ma.Element, ma.Base, {
 				}
 			}
 			else {
-				this.dom.appendChild(newEl);
+				this.dom.appendChild(newEl.dom);
 			}
 			elements.push(newEl);
 			newEl.parent = this; //backward reference
@@ -462,27 +481,165 @@ Ext.extend(ma.Element, ma.Base, {
 	 *             .object  [String]
 	 *             .method  [String]
 	 *             .params  [Mixed]
-	 *             (note that other values available for ma.ajax.request() are ignored here)
+	 *             (note that other values available for ma.ajax.request() are ignored here; you can use onContentLoaded event for callback)
 	 */
-	getContent: function(options) {
-		if ('string' === typeof options) {
-			this.ext.load(options);
+	getContent: function(url) {
+		var
+			callback = this._getContentCallback.createDelegate(this), //used to call callback in scope of this element instead of window
+			options;
+
+		this.mask();
+
+		if (ma.util.is(url, String)) {
+			options = url;
 		}
 		else {
 			if (undefined === Ext.Ajax.url) {
 				ma.console.error('Error in %s.getContent(): First you must set dataMiner URL. Use %s.setDefaultParams().', this._fullName, ma.ajax._fullName);
 			}
-			this.ext.load({
+			options = {
 				url: Ext.Ajax.url,
 				params: {
-					object: options.object,
-					method: options.method,
-					params: options.params ? this.jsonEncode(options.params) : undefined, //undefined would be converted to "null" which is not acceptable
+					object: url.object,
+					method: url.method,
 					token : ma.Cookie.get('token')
 				}
-			}); //this.ext.load();
+			};
+			if (url.params) { //add params only if they are defined
+				ma.util.merge(options, {param: {params: this.jsonEncode(url.params) } } );
+			}
+		}
+
+		this.ext.load(options, {}, callback); //this.ext.load();
+	},
+
+	/**
+	 * handles loading of new content into the element
+	 *
+	 * @param  [Object]  params
+	 * @param  [Boolean] success
+	 * @param  [Object]  response
+	 * @return [void]
+	 */
+	_getContentCallback: function(params, success, response) {
+		if (success) {
+			this.mask(false);
+			this.notify(ma.Element.events.onContentLoaded, this);
+		}
+	},
+
+	_getMask: function() {
+		var
+			id = this.id + '_',
+			size,
+			mask,
+			box,
+			row,
+			text;
+
+		if (this._mask) {
+			return this._mask;
+		}
+		else {
+			//create new mask for this element
+			size = this.getInfo();
+			mask = new ma.Element({
+				id: id + 'mask',
+				style: {
+					display: 'none',
+					backgroundColor: 'gray',
+					position: 'absolute',
+					left: size.left + 'px',
+					top: size.top + 'px',
+					width: size.width + 'px',
+					height: size.height + 'px',
+					cursor: 'wait',
+					zIndex: 99999
+				},
+				children: [
+					{
+						tagName: 'table',
+						id: id + 'maskFrame',
+						style: {
+							position: 'absolute'
+						},
+						children: [
+							{
+								tagName: 'tbody',
+								children: [
+									{
+										tagName: 'tr',
+										children: [
+											{
+												tagName: 'td',
+												children: [
+													{
+														tagName: 'img',
+														alt: '',
+														src: 'img/loading.dots.gif'
+													}
+												] //maskFrame tbody tr td.first children
+											},
+											{
+												tagName: 'td',
+												children: [
+													{
+														id: id + 'maskText',
+														innerHTML: 'Loading...',
+														style: {
+															fontSize: '50px',
+															paddingLeft: '1em'
+														}
+													}
+												] //maskFrame tbody tr td.second children
+											}
+										] //maskFrame tbody tr children
+									}
+								] //maskFrame .tbody children
+							}
+						] //maskFrame children
+					} //maskFrame
+				] //mask children
+			});
+
+			this._mask = mask;
+
+			document.body.appendChild(mask.dom);
+			mask._maskText = ma.Element.get(id + 'maskText');
+			/**
+			 * sets text inside the mask
+			 *
+			 * @param  [String] text
+			 * @return [void]
+			 */
+			mask.setText = function(text){
+				this._maskText.dom.innerHTML = text;
+			}; //mask.setText()
+
+			return mask;
+
+		} //create mask
+	}, //_getMask()
+
+	mask: function(showMask, text) {
+		var
+			is = ma.util.is,
+			mask = this._getMask();
+
+		if (false === showMask) {
+			mask.ext.setOpacity(0, true);
+			mask.hide.defer(100, mask);
+		}
+		else {
+			if (is(text, String) && !is(text, 'empty')) {
+				mask.setText(text);
+			}
+			mask.ext.setOpacity(0);
+			mask.show();
+			mask.ext.setOpacity(0.9, true);
 		}
 	}
+
 }); //extend(ma.Element)
 
 /**

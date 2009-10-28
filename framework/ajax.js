@@ -176,11 +176,10 @@ Ext.extend(ma._Ajax, ma.Base, {
 			ma.console.error('Error in %s.request(): First you must set dataMiner URL. Use %s.setDefaultParams().', this._fullName, this._fullName);
 		}
 
-		var params = {
+		var extParams = {
 			params: {
 				object: options.object,
 				method: options.method,
-				params: options.params ? this.jsonEncode(options.params) : undefined, //undefined would be converted to "null" which is not acceptable
 				token : ma.Cookie.get('token')
 			},
 			callback: this._requestCallback,
@@ -192,7 +191,11 @@ Ext.extend(ma._Ajax, ma.Base, {
 			} //scope object
 		};
 
-		Ext.Ajax.request(params);
+		if (options.params) { //add params only if they are defined
+			ma.util.merge(extParams, {params: {params: this.jsonEncode(options.params) } } );
+		}
+
+		Ext.Ajax.request(extParams);
 	}, //ma.ajax.request()
 
 	/**
@@ -245,7 +248,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @return [Object] decoded JSON
 	 */
 	jsonDecode: function(response) {
-		return Ext.util.JSON.decode.call(this, response, true); //true to convert invalid JSON to NULL
+		return Ext.util.JSON.decode(response, true); //true to convert invalid JSON to NULL
 	}, //jsonDecode()
 
 	/**
@@ -255,7 +258,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @return [Object] JSON encoded text
 	 */
 	jsonEncode: function(object) {
-		return Ext.util.JSON.encode.call(this, object);
+		return Ext.util.JSON.encode(object);
 	}, //jsonEncode()
 
 	/**

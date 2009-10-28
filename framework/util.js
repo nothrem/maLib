@@ -206,7 +206,7 @@ ma.util = {
 		if (Object === type ) {
 			return true === Ext.isObject(value);
 		}
-		if (Ext.isFunction(type)) {
+		if (Ext.isFunction(type) || Ext.isObject(type)) {
 			return value instanceof type;
 		}
 		if (ma.util.is(type, String)) {
@@ -249,7 +249,23 @@ ma.util = {
 	 * Same as eval(), just a way to prevent JSlint from reporting eval where its really needed
 	 * note: new versions of JSlint reports this one as well
 	 */
-	_eval: eval
+	_eval: eval,
+
+	getReference: function(k_simple) {
+		var is = ma.util.is;
+
+		if (is(k_simple, String)) {
+			return new String(k_simple);
+		}
+		if (is(k_simple, Number)) {
+			return new Number(k_simple);
+		}
+		if (is(k_simple, Boolean)) {
+			return new Boolean(k_simple);
+		}
+		//other values are already references (or undefined)
+		return k_simple;
+	}
 
 };
 

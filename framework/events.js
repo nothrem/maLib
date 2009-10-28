@@ -28,19 +28,19 @@
 <code>
 How to create global event:
 
-	 new ma.Event('onError'); //creates new event "onError"
-	 ma.Event.registerObserver('onError', function(...) {...}); //registers observer
-	 ma.Event.notify('onError', this);
+	new ma.Event('onError'); //creates new event "onError"
+	ma.Event.registerObserver('onError', function(...) {...}); //registers observer
+	ma.Event.notify('onError', this);
 
 How to create local observer
 
-	 this.onError = new ma.Event('PRIVATE_myClass.onError'); //creates new event "onError" - note the starting part!
-	 this.on = function(observer) {
+	this.onError = new ma.Event('PRIVATE_myClass.onError'); //creates new event "onError" - note the starting part!
+	this.on = function(observer) {
 		this.onError.registerObserver(observer);
-	 }
-	 if (error) {
+	}
+	if (error) {
 		this.onError.notify(this);
-	 }
+	}
 </code>
  */
 /**
@@ -83,8 +83,13 @@ Ext.extend(ma.Observable, Ext.util.Observable, {
 	 * @return [Boolean] false if any of observers returned false
 	 */
 	notify: function(eventName, params){
-		if ('string' === typeof eventName) {
+		var is = ma.util.is;
+
+		if (is(eventName, String)) {
 			return this.fireEvent.apply(this, arguments);
+		}
+		else if(is(eventName, 'empty')) {
+			ma.console.error(ma.util.printf('Undefined event in %s.notify()', this._fullName));
 		}
 		else {
 			ma.console.error(ma.util.printf('Unexpected type of event in %s.notify()', this._fullName));
