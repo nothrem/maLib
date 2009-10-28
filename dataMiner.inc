@@ -76,7 +76,7 @@
  *          result:  false
  *          error:   <short error description>
  *
- *          if (!response.result) {
+ *          if (!response.json.result) {
  *          	ma.Element.get(params.element).set({innerHTML: 'Error on getting content: ' + response.error});
  *          }
  *
@@ -84,7 +84,7 @@
  *          result:  true
  *          <other>: <values returned by called method>
  *
- *          if (response.result) {
+ *          if (response.json.result) {
  *          	html = response.html;
  *          	ma.Element.get(params.element).set({innerHTML: html});
  *          }
@@ -97,7 +97,7 @@ class dataMiner
 
 	/**
 	 * @constructor
-	 * creates new datMiner instance
+	 * creates new dataMiner instance
 	 *
 	 * @param [Function] callback function that is able to return instance of object of given name
 	 *           .objectName  [String] name of object expected to get
@@ -132,10 +132,10 @@ class dataMiner
 		session_start();
 
 		//init session if asked to
-		if ('session' == $object AND 'init' == $method) {
+		if ('Session' == $object AND 'init' == $method) {
 			$now    = time();
 			$client = $_SERVER['REMOTE_ADDR'];
-			$token = md5($now.$client);
+			$token = md5($now . $client);
 
 			setcookie('token', $token);
 
@@ -148,7 +148,7 @@ class dataMiner
 		//check correct session and token
 		$loginTime = $_SESSION['loginTime'];
 		$client    = $_SERVER['REMOTE_ADDR'];
-		$token     = md5($now.$client);
+		$token     = md5($loginTime . $client);
 
 		if (!isset($_POST['token']) OR $token <> $_POST['token']) {
 			$this->quit();
@@ -176,13 +176,16 @@ class dataMiner
 		$params = json_decode($params, true);
 		$output = array();
 
-		$object = $this->getObjectCallback($objectName);
+		$object = $this->getInternalObject($objectName);
+		if (is_null($object)) {
+			$object = $this->getObjectCallback($objectName);
+		}
 
 		$result = $object->$methodName($params, &$output);
 
 		$output['result'] = $result;
 
-		echo json_encode('$output');
+		echo json_encode($output);
 	}
 
 	/**
@@ -200,6 +203,23 @@ class dataMiner
 		}
 
 		exit();
+	}
+
+	/**
+	 * tries to load object from internal library
+	 *
+	 * @param  $objectName [String] name of the object
+	 * @return [Object] object or null if not found
+	 */
+	protected function getInternalObject($objectName) {
+		$path = dirname(__FILE__);
+		$path .= '/dataMiner/';
+
+		if (!(include_once($path . $objectName . '.inc'))) {
+			return null;
+		}
+
+		return new $objectName();
 	}
 
 }
