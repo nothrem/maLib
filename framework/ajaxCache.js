@@ -107,11 +107,29 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 	 * @return [Integer] current number of params (after this one was added)
 	 */
 	add: function(options) {
-		var params;
+		var params = {};
 
-		params = ma.util.clone(this._defaultParams, options);
+		Ext.apply(params, this._defaultParams);
+		Ext.apply(params, options);
 
 		this._requests.push(params);
+
+		return this.length();
+	},
+
+	/**
+	 * adds new request to the cache at the first position
+	 *
+	 * @param options [Object]
+	 * @return [Integer] current number of params (after this one was added)
+	 */
+	insert: function(options) {
+		var params = {};
+
+		Ext.apply(params, this._defaultParams);
+		Ext.apply(params, options);
+
+		this._requests.unshift(params);
 
 		return this.length();
 	},
@@ -125,9 +143,10 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 	send: function() {
 		var
 			options = this._requests.shift(),
-			params;
+			params = {};
 
-		params = ma.util.clone(options, {
+		Ext.apply(params, options);
+		Ext.apply(params, {
 			callback: this._sendCallback,
 			callbackScope: this,
 			callbackParams: options
@@ -173,5 +192,3 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 	} //_requestCallback()
 
 }); //extend(ma._Ajax)
-
-ma.ajax = new ma._Ajax();

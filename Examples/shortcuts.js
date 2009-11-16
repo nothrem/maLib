@@ -42,7 +42,7 @@ ma.initAjax = function(dataMiner, callback) {
 	ma.ajax.setDefaultParams({dataMiner: dataMiner});
 
 	ma.ajax.request({
-		object: 'session',
+		object: 'Session',
 		method: 'init',
 		callbackParams: callback,
 		/**

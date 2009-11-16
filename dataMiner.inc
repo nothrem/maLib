@@ -172,8 +172,13 @@ class dataMiner
 		$objectName = $this->object;
 		$methodName = $this->method;
 
-		$params = $_POST['params'];
-		$params = json_decode($params, true);
+		if (array_key_exists('params', $_POST)) {
+			$params = $_POST['params'];
+			$params = json_decode($params, true);
+		}
+		else {
+			$params = array();
+		}
 		$output = array();
 
 		$object = $this->getInternalObject($objectName);

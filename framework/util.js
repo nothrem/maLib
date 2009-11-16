@@ -112,7 +112,7 @@ ma.util = {
 		if (is(values, Object) && !is(values, Array)) {
 			for (property in values) {
 				value = values[property];
-				if (is(value, Object) & !is(value, Array)) {
+				if (is(value, Object) & !is(value, Array) & !is(value, HTMLElement) & !is(value, RegExp)) {
 					if (!is(object[property], Object)) {
 						object[property] = {}; //ensure property is defined as object
 					}
