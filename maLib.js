@@ -350,6 +350,22 @@ ma = {
 		return (path && path[1]) ? path[1] : '';
 	}, //_getMyPath
 
+	/**
+	 * Extends class by its parent (improved Ext.extend method)
+	 *
+	 * @param  extendClass [Object / String] reference to class or its name incl. namespace (e.g. "ma.mySpace.MyClass")
+	 * @param  superClass  [Object] parent class (equals to 'extends' keyword from other languages)
+	 * @param  methods     [Object] object with class methods
+	 * @return [Object] see Ext.extend() for details
+	 *
+	 * @example Class methods and properties created by this method (if called with extendClass of String type):
+<code>
+	._className [String] name of the new class (e.g. "MyClass") - can be used in debug reports
+	._fullName  [String] name of the new class incl. namespace (e.g. "ma.mySpace.MyClass")
+	._class     [Object] reference to class from which the object was created
+	._class.superclass [Object] reference to superClass (i.e. parent class)
+</code>
+	 */
 	extend: function(extendClass, superClass, methods) {
 		var path;
 
@@ -357,9 +373,11 @@ ma = {
 			path = ma._getNamespace(extendClass);
 			extendClass = path.node;
 
-			methods._className = path.nodeName;
-			methods._fullName  = path.namespace;
-			methods._class     = path.node;
+			Ext.applyIf(methods, {
+				_className: path.nodeName,
+				_fullName:  path.namespace,
+				_class:     path.node
+			}); //merge class references
 		}
 		else {
 			if (!methods._className) {
