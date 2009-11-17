@@ -43,6 +43,8 @@ ma = {
 		ma.loadJS('framework/util');
 		ma.loadJS('framework/events');
 		ma.loadJS('framework/Base');
+		ma.loadJS('framework/browser');
+		ma.loadJS('external/BrowserDetect');
 		ma.loadJS('framework/Element');
 		ma.loadJS('framework/cookies');
 		ma.loadJS('framework/ajax');
