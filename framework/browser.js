@@ -51,7 +51,7 @@ ma._Browser = function() {
 	version = this._class._detect();
 
 	ma.util.merge(this, {
-		_supportedBrowsers: {},
+		_supportedBrowsers: [],
 		_name:    version.browser,
 		_version: version.version,
 		_os:      version.os
@@ -162,7 +162,20 @@ ma.extend('ma._Browser', ma.Base, {
 	 * @return [void]
 	 */
 	addSupportedBrowsers: function(supportedBrowsers) {
-		ma.util.merge(this._supportedBrowsers, supportedBrowsers);
+		this._supportedBrowsers = this._supportedBrowsers.concat(supportedBrowsers);
+	},
+
+	/**
+	 * Returns true if current browser is suppored
+	 *
+	 * @param  [void]
+	 * @return [Boolean] true for supported browser
+	 */
+	isSupported: function() {
+		if (ma.util.is(this._supportedBrowsers, Empty)) {
+			ma.console.warn('No browser was registered as supported!');
+		}
+		return this.is(this._supportedBrowsers);
 	},
 
 	/**
