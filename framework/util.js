@@ -251,20 +251,26 @@ ma.util = {
 	 */
 	_eval: eval,
 
-	getReference: function(k_simple) {
+	/**
+	 * returns referencable simple type
+	 *
+	 * @param {String/Number/Boolean} simple
+	 * @param [Object] object type of String, Number or Boolean (respective to input param)
+	 */
+	getReference: function(simple) {
 		var is = ma.util.is;
 
-		if (is(k_simple, String)) {
-			return new String(k_simple);
+		if (is(simple, String)) {
+			return new String(simple);
 		}
-		if (is(k_simple, Number)) {
-			return new Number(k_simple);
+		if (is(simple, Number)) {
+			return new Number(simple);
 		}
-		if (is(k_simple, Boolean)) {
-			return new Boolean(k_simple);
+		if (is(simple, Boolean)) {
+			return new Boolean(simple);
 		}
 		//other values are already references (or undefined)
-		return k_simple;
+		return simple;
 	}
 
 };
