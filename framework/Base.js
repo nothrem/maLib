@@ -33,7 +33,6 @@
  * @return [void]
  */
 ma.Base = function() {
-	ma.console.log('Creating new instance of class %s', this._className);
 	ma.Base.superclass.constructor.apply(this, arguments);
 	this.isReady = true;
 	this._isInstance = true;
@@ -45,7 +44,6 @@ Ext.extend(ma.Base, ma.Observable, {
 	 * @scope ma.Base
 	 */
 	// static properties
-	_isMaFx: true,
 	_isInstance: false,
 	_className: 'Base',
 	_fullName: 'ma.Base',

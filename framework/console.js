@@ -29,6 +29,11 @@ ma.console = {
 		profile: {}
 	},
 	/**
+	 * @private
+	 * cache for all logged messages
+	 */
+	_logCache: [],
+	/**
 	 * formats message with placeholders
 	 *
 	 * @param  [String] string with format placeholders
@@ -39,13 +44,66 @@ ma.console = {
 	 */
 	_printf: window.printf || function(message) {
 		return message;
-	},
+	}, //_printf()
 
 	/**
-	 * @private
-	 * cache for all logged messages
+	 * Returns number formated as two digits
+	 *
+	 * @param  [Number] number
+	 * @return [String]
 	 */
-	_logCache: [],
+	_twoDigitsNumber: function(number) {
+		return (9 < number) ? '' + number : '0' + number;
+	}, //_twoDigitsNumber()
+
+	/**
+	 * Returns number formated as two digits
+	 *
+	 * @param  [Number] number
+	 * @return [String]
+	 */
+	_threeDigitsNumber: function(number) {
+		return (99 < number) ? '' + number : (9 < number) ? '0' + number : '00' + number;
+	}, //_twoDigitsNumber()
+
+	/**
+	 * Returns format in ISO format (y-m-d h:m:s.t)
+	 *
+	 * @param  [void]
+	 * @return [String]
+	 */
+	_getTime: function() {
+		var
+			n2 = ma.console._twoDigitsNumber,
+			n3 = ma.console._threeDigitsNumber,
+			now = new Date();
+
+		return now.getYear() + '-' + n2(now.getMonth()+1) + '-' + n2(now.getDate()) + ' '
+				+ n2(now.getHours()) + ':' + n2(now.getMinutes()) + ':' + n2(now.getSeconds()) + '.' + n3(now.getMilliseconds());
+	}, //_getTime()
+
+	/**
+	 * Counts difference in two times
+	 *
+	 * @param  start [Number / Date] time in miliseconds or Date object
+	 * @param  end   [Number / Date] (optional, default: now) time in miliseconds or Date object
+	 * @return [Number] number of miliseconds between times
+	 */
+	_diffTime: function(start, end) {
+		if (!(start instanceof Date)) {
+			start = new Date(start);
+		}
+		if (!(end instanceof Date)) {
+			if (undefined === end) { //Date constructor can't handle undefined value
+				end = new Date();
+			}
+			else {
+				end = new Date(end);
+			}
+		}
+
+		return end - start;
+	}, //diffTime()
 
 	/**
 	 * @private
@@ -58,18 +116,82 @@ ma.console = {
 	},
 
 	/**
-	 * adds an error into log
+	 * Returns call stack based on function's caller list
 	 *
-	 * @param  [String] (required) string, optionally with format placeholders
+	 * @param [void]
+	 * @return [Array] list of function and their acctual params (tip: use .join() to convert it into string)
+	 */
+	_getCallStack: function getCallStack() {
+		var
+			is = ma.util.is,
+			caller = arguments.callee.caller.caller, //caller of the methods that called this method (i.e. function that accually called the error() method)
+			result = [],
+			callerHead,
+			callerArgs,
+			arg;
+
+		while(caller) {
+			callerArgs = [];
+			callerHead = new String(caller); //convert function to string containing its code
+			callerHead = callerHead.match(/^(function)(\ )*([^\(]*)(\()([^\)]*)(\))/); //parse only function header "function name(a,b)"
+
+			//get caller's arguments into regullar array
+			for (var i = 0, c = caller.arguments.length; i < c; i++) {
+				arg = caller.arguments[i];
+				if (is(arg, false)) { arg = 'False'; }
+				if (is(arg, true)) { arg = 'True'; }
+				if (is(arg, Function)) { arg = 'Function'; }
+				if (is(arg, Object)) { arg = 'Object'; }
+				callerArgs.push(arg);
+			}
+			//add function into stack
+			callerHead[0] = ''; //remove full RegExp result
+			callerHead[5] = callerArgs.join(', '); //replace abstract params with actual ones
+			result.push(callerHead.join(''));
+
+			caller = caller.caller; //go to next item in the stack
+		}
+		return result;
+	}, //_getCallStack()
+
+	/**
+	 * adds error in specified file and method into log
+	 *
+	 * @param [String] (required) error message
+	 * @param [String] file where the error happened
+	 * @param [Number/String] line or function name where error happened
+	 * @return [void]
+	 */
+	errorAt: function(message, file, line) {
+		var fileInfo = '';
+
+		if (file) {
+			fileInfo = file;
+			if (line) {
+				fileInfo += '::' +  line;
+			}
+			fileInfo = '[' + fileInfo + ']';
+		}
+
+		ma.console._log('[ERROR]' + fileInfo + ' ' + message + ' (call stack: ' + ma.console._getCallStack().join(' <- ') + ')');
+	}, //error()
+
+	/**
+	 * adds an error into log; accepts placable params
+	 *
+	 * @param  [String] (required) error message, optionally with format placeholders
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
+	 * @return [void]
 	 */
 	error: function(message) {
 		message = ma.console._printf.apply(this, arguments);
-		ma.console._log('Internal error: ' + message);
+		ma.console._log('[ERROR] ' + message + ' (call stack: ' + ma.console._getCallStack().join(' <- ') + ')');
+
 		if (window.console) {
 			console.trace(this);
 			console.error(message);
 		}
+
 		throw message;
 	},
 
@@ -78,10 +200,12 @@ ma.console = {
 	 *
 	 * @param  [String] (required) string, optionally with format placeholders
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
+	 * @return [void]
 	 */
 	warn: function(message) {
 		message = ma.console._printf.apply(this, arguments);
-		ma.console._log('Warning: ' + message);
+		ma.console._log('[WARN ] ' + message);
+
 		if (window.console) {
 			console.warn(message);
 		}
@@ -120,10 +244,12 @@ ma.console = {
 	 *
 	 * @param  [String] (required) string, optionally with format placeholders
 	 * @param  [Mixed]  (optional) any number of params to be placed to placeholders
+	 * @return [void]
 	 */
 	log: function(message) {
 		message = ma.console._printf.apply(this, arguments);
 		ma.console._log(message);
+
 		if (window.console) {
 			console.log(message);
 		}
@@ -136,21 +262,25 @@ ma.console = {
 	 * @return [Number] current time for the timer (usable to get 'lap' time)
 	 */
 	time: function(timer){
-		var cache = ma.console._cache.count;
+		var cache = ma.console._cache.time;
 
 		if (undefined === cache[timer]) {
 			cache[timer] = new Date(); //get current time
 		}
 
-		return ma.util.diffTime(cache[timer]);
-	},
+		return ma.console._diffTime(cache[timer]);
+	}, //time()
+
 	/**
-	 * empty function
+	 * resets timer and returns the number of passed seconds
+	 *
+	 * @param  [String] name of timer
+	 * @return [Number] final time for the timer
 	 */
 	timeEnd: function(timer) {
 		var
-			cache = ma.console._cache.count,
-			time = ma.util.diffTime(cache[timer]);
+			cache = ma.console._cache.time,
+			time = ma.console._diffTime(cache[timer]);
 
 		cache[timer] = undefined; //reset the timer
 
@@ -159,6 +289,9 @@ ma.console = {
 
 	/**
 	 * counts number of calls
+	 *
+	 * @param  [String] name of counter (use same for countEnd() to get result)
+	 * @return [Number] current number of calls
 	 */
 	count: function(counter) {
 		var
@@ -170,7 +303,10 @@ ma.console = {
 		return count;
 	},
 	/**
-	 * resets counter
+	 * resets counter and returns the result
+	 *
+	 * @param  [String] name of counter
+	 * @return [Number] final number of calls
 	 */
 	countEnd: function(counter) {
 		var cache = ma.console._cache.count,
@@ -269,3 +405,5 @@ ma.console = {
 		return ma.console._logCache.join('<br>');
 	}
 };
+
+window.onerror = ma.console.errorAt;

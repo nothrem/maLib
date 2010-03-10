@@ -203,6 +203,19 @@ ma.util = {
 		if (Function === type ) {
 			return true === Ext.isFunction(value);
 		}
+		if (HTMLElement === type ) {
+			if (ma.Element && ma.Element.isHtmlElement) {
+				return ma.Element.isHtmlElement(value);
+			}
+			else {
+				if (window.HTMLElement) {
+					return value instanceof HTMLElement;
+				}
+				else {
+					ma.console.errorAt('Cannot check HTMLElement in this client', 'ma.util', 'is');
+				}
+			}
+		}
 		if (Object === type ) {
 			return true === Ext.isObject(value);
 		}
@@ -222,27 +235,68 @@ ma.util = {
 	}, //is()
 
 	/**
-	 * Counts difference in two times
+	 * executes callback in given scope and with given params
 	 *
-	 * @param  start [Number / Date] time in miliseconds or Date object
-	 * @param  end   [Number / Date] (optional, default: now) time in miliseconds or Date object
-	 * @return [Number] number of miliseconds between times
+	 * @param  [Callback] options
+	 *            .callback  [Function] (optional, default: no callback)
+	 *            .callbackScope [Object] (optional, default: window)
+	 *            .callbackParams [Array] (optional, default: none)
+	 * @return [Mixed] what returned the callback; undefined for invalid callback
+	 *
+	 * @note: as a type Callback will be called any object that contains properties defined above
 	 */
-	diffTime: function(start, end) {
-		if (!(start instanceof Date)) {
-			start = new Date(start);
+	runCallback: function(options) {
+		if (ma.util.is(options.callback, Function)) {
+			return options.callback.apply(options.callbackScope || window, options.callbackParams || []);
 		}
-		if (!(end instanceof Date)) {
-			if (undefined === end) { //Date constructor can't handle undefined value
-				end = new Date();
+	},
+
+	/**
+	 * executes given method in a loop (method must accept callback in first param)
+	 *
+	 * @param  [Number] number of milisecond for the loop
+	 * @param  [Callback] function to call
+	 *              .callback [Function]
+	 *                   callback [Callback]
+	 *                   params   [Object]
+	 * @param  [Boolean] (optional, default: false) true to wait before execution, false to call the method now
+	 * @return [void]
+	 */
+	loopCallback: function(interval, callback, wait) {
+		var callbackParams;
+
+		if (ma.util.is(callback, Object) && ma.util.is(callback.callback, Function)) {
+			callbackParams = [ //params for the called method
+				{ //callback
+					callback: ma.util.loopCallback,
+					callbackScope: ma.util,
+					callbackParams: [
+						interval,
+						callback,
+						true //always wait in callback
+					]
+				}, //callback
+				callback.callbackParams
+			];
+			if (true === wait) {
+				ma.util.runCallback.defer(interval, ma.util, [{
+					callback: callback.callback,
+					callbackScope: callback.callbackScope,
+					callbackParams: callbackParams
+				}]);
 			}
 			else {
-				end = new Date(end);
+				ma.util.runCallback({
+					callback: callback.callback,
+					callbackScope: callback.callbackScope,
+					callbackParams: callbackParams
+				});
 			}
 		}
-
-		return end - start;
-	}, //diffTime()
+		else {
+			ma.console.errorAt('Invalid function.', 'ma.util', 'loopCallback');
+		}
+	},
 
 	/**
 	 * @private

@@ -170,6 +170,9 @@ window.printf = function(fstring /* other arguments are accessed via arguments p
 			return processFlags(flags, width, rs, 0);
 		}
 	};
+	if ('string' !== typeof fstring) {
+		fstring = '' + fstring;
+	}
 	var farr = fstring.split('%');
 	var retstr = farr[0];
 	var fpRE = /^([\-+ #]*)(\d*)\.?(\d*)([cdieEfFgGosuxX])(.*)$/;

@@ -47,19 +47,20 @@
  */
 ma.Element = function(domElement){
 	var
+		is = ma.util.is,
 		config, newConfig,
 		children, //used to create element's children if defined
 		parent;
 
-	if (undefined === domElement) {
-		ma.console.error('Undefined element in %s.constructor().', this._fullName);
+	if (is(domElement, undefined)) {
+		ma.console.errorAt('Undefined element.', this._fullName, 'constructor');
 	}
 	//if domElement is in fact a ma.Element already, return it (used in some functions for parameter)
-	if (domElement instanceof ma.Element) {
+	if (is(domElement, ma.Element)) {
 		return domElement;
 	}
 	//if domElement is already wrapped, return the wrapper
-	if (domElement instanceof HTMLElement && domElement._ma_wrapper instanceof ma.Element) {
+	if (is(domElement, HTMLElement) && is(domElement._ma_wrapper, ma.Element)) {
 		return domElement._ma_wrapper;
 	}
 
@@ -79,9 +80,9 @@ ma.Element = function(domElement){
 	);
 
 	//Create new element from configuration
-	if (!ma.util.is(domElement, HTMLElement)) { //we only get element configuration
+	if (!is(domElement, HTMLElement)) { //we only get element configuration
 		config = domElement || {};
-		if ('string' === typeof config) {
+		if (is(config, String)) {
 			config = {
 				tagName: config
 			};
@@ -89,7 +90,7 @@ ma.Element = function(domElement){
 
 		if (config.id) {
 			if (document.getElementById(config.id)) {
-				ma.console.error('Internal error: Duplicate Element; id "%s" is already used!', config.id);
+				ma.console.errorAt('Duplicate Element; id "' + config.id + '" is already used!', this._fullName, 'constructor');
 				return null;
 			}
 		}
@@ -128,7 +129,7 @@ ma.Element = function(domElement){
 	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it trasparent
 
 	//create children
-	if (ma.util.is(children, Array)) {
+	if (is(children, Array)) {
 		this.add(children);
 	}
 
@@ -192,7 +193,7 @@ Ext.extend(ma.Element, ma.Base, {
 				if (insertBefore instanceof ma.Element) {
 					this.dom.insertBefore(newEl, insertBefore.dom);
 				}
-				else if (insertBefore instanceof HTMLElement) {
+				else if (ma.Element.isHtmlElement(insertBefore)) {
 					this.dom.insertBefore(newEl, insertBefore);
 				}
 				else {
@@ -261,7 +262,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @param  [Object] (optional, default: false) true = tree search (search child of any level/generation); false searches only direct child; ignored when first param is Integer
 	 * @return [Element] reference to child; undefined if not found (e.g. no such element, it's not child or any error)
 	 *
-	 * note: for tree seach this method can search for parent-child bond only within tree created by Elements.
+	 * note: for tree search this method can search for parent-child bond only within tree created by Elements.
 	 *       if there is any DOMelement (non-Element) in the tree, the bond will be broken (see Element.isElement)
 	 */
 	getChild: function(id, useTreeSearch) {
@@ -307,11 +308,38 @@ Ext.extend(ma.Element, ma.Base, {
 	 * returns n-th child of this element
 	 *
 	 * @param  [Number] index of the child
-	 * @return [Object] reference to child; undefined if element does not have such child
+	 * @return [Element] reference to child; undefined if element does not have such child
 	 */
 	getChildByIndex: function(index) {
-		return (this.dom.childNodes) ? this.dom.childNodes[index] : undefined;
+		var child;
+
+		if (!this.dom.childNodes) {
+			return undefined; //does not have any children
+		}
+
+		child = this.dom.childNodes[index];
+
+		if (!ma.util.is(child, HTMLElement)) {
+			return undefined; //this child does not exist (or is not valid HTMLElement)
+		}
+
+		if (child._ma_wrapper) {
+			return child._ma_wrapper; //this element is already wrapped
+		}
+		else {
+			return new ma.Element(child); //create new wrapper
+		}
 	}, //getChildByIndex()
+
+	/**
+	 * returns number of children of this Element
+	 *
+	 * @param  [void]
+	 * @return [Number]
+	 */
+	getChildCount: function() {
+		return (this.dom.childNodes) ? this.dom.childNodes.length : 0;
+	},
 
 	/**
 	 * moves element from one DOM place to another (i.e. changes parent)
@@ -324,7 +352,7 @@ Ext.extend(ma.Element, ma.Base, {
 		if ('string' === typeof parent) {
 			parent = ma.Element.get(parent);
 		}
-		else if (parent instanceof HTMLElement) {
+		else if (ma.Element.isHtmlElement(parent)) {
 			parent = new ma.Element(parent);
 		}
 		else if (parent instanceof ma.Element) {
@@ -363,7 +391,7 @@ Ext.extend(ma.Element, ma.Base, {
 		else if ('string' === typeof child) {
 				child = this.getChild(child);
 		}
-		else if (child instanceof HTMLElement) {
+		else if (ma.Element.isHtmlElement(child)) {
 			child = new ma.Element(child);
 		}
 		else {
@@ -683,5 +711,29 @@ Ext.apply(ma.Element, {
 				return null;
 			}
 		}
+	},
+
+	isHtmlElement: function(element) {
+		if (!element) {
+			return false;
+		}
+		if (ma.Element._unsupportedHtmlElement) { //IE or simililat clients that does not support HTMLElement class
+			try {
+				return (undefined !== element.nodeType);
+			}
+			catch (err) {
+				return false;
+			}
+		}
+		else { //other clients that supports HTMLElement
+			return (element instanceof HTMLElement);
+		}
 	}
 });
+
+//IE does not support HTMLElement class
+//this creates fictive HTMLElement class to allow to use it in ma.util.is() method instead of native one
+if (!window.HTMLElement) {
+	window.HTMLElement = new (function() {})();
+	ma.Element._unsupportedHtmlElement = true;
+}

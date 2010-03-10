@@ -91,6 +91,12 @@ Ext.extend(ma._Ajax, ma.Base, {
 
 	/**
 	 * @private
+	 * security token for ma.ajax.request() method
+	 */
+	_token: null,
+
+	/**
+	 * @private
 	 * handles Ext.Ajax event beforerequest
 	 *
 	 * @param  [Object] connection
@@ -133,7 +139,8 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * sets common params for each AJAX request
 	 *
 	 * @param [Object] options
-	 *          .dataMiner  [String] (required) URL of dataMiner
+	 *          .dataMiner  [String] (optional, required for request() method) URL of dataMiner
+	 *          .token      [String] (optional, required for request() method) security token for dataMiner
 	 *          .headers    [Object] (optional, default: none) HTTP headers for request; see Ext.Ajax.request.header
 	 *          .noCaching  [String] (optional, default: '_hash') name of param to prevent response caching (e.g. in IE), empty string to allow caching
 	 * @return [void]
@@ -155,7 +162,95 @@ Ext.extend(ma._Ajax, ma.Base, {
 				Ext.ajax.disableCachingParam = options.noCaching;
 			}
 		}
+		if ('string' === typeof options.token) {
+			ma.ajax._token = options.token;
+		}
 	}, //setDefaultParams()
+
+	/**
+	 * sends GET request to specified URL
+	 *
+	 * @param  [Object] options
+	 *          .url     [String] (required)
+	 *          .params  [String/Object/Function] (optional)
+	 *          .callback       [Function] callback to handle response
+	 *              .response     [Object]    response from server
+	 *              .success      [Boolean]   true if response is OK
+	 *              .params       [Object]    see options.callbackParams
+	 *          .callbackParams [Object]   params for callback function
+	 *          .callbackScope  [Object]   scope for callback
+	 * @return [void]
+	 */
+	get: function(options) {
+		if (undefined === options.url) {
+			ma.console.errorAt('You must define URL of the request.', this._fullName, 'get');
+		}
+
+		var extParams = {
+			url: options.url,
+			method: 'GET',
+			callback: ma.ajax._requestCallback,
+			scope: { //fictive object to serve as scope and keep options required by callback
+				ajax: this,
+				scope: options.callbackScope,
+				params: options.callbackParams,
+				callback: options.callback,
+				getJson: false
+			} //scope object
+		};
+
+		if (options.params) { //add params only if they are defined
+			extParams.params = options.params;
+		}
+
+		Ext.Ajax.request(extParams);
+	}, //get()
+
+	/**
+	 * sends POST request to specified URL
+	 *
+	 * @param  [Object] options
+	 *          .url     [String] (required)
+	 *          .params  [String/Object/Function] (optional) POST data or GET data when .data is defined; Object will be converted to URL-encoded string
+	 *          .data    [String/Object/Function] (optional) POST data; Object will be converted to JSON-encoded string
+	 *          .callback       [Function] callback to handle response
+	 *              .response     [Object]    response from server
+	 *              .success      [Boolean]   true if response is OK
+	 *              .params       [Object]    see options.callbackParams
+	 *          .callbackParams [Object]   params for callback function
+	 *          .callbackScope  [Object]   scope for callback
+	 * @return [void]
+	 */
+	post: function(options) {
+		if (undefined === options.url) {
+			ma.console.errorAt('You must define URL of the request.', this._fullName, 'get');
+		}
+
+		var extParams = {
+			url: options.url,
+			method: 'POST',
+			callback: ma.ajax._requestCallback,
+			scope: { //fictive object to serve as scope and keep options required by callback
+				ajax: this,
+				scope: options.callbackScope,
+				params: options.callbackParams,
+				callback: options.callback,
+				getJson: false
+			} //scope object
+		};
+
+		if (options.params) { //add params only if they are defined
+			extParams.params = options.params;
+		}
+		if (options.data) { //add params only if they are defined
+			if (ma.util.is(options.data, Function)) { //Ext.Ajax does not support function for JSON data - supply it
+				options.data = options.data();
+			}
+			extParams.data = options.data;
+		}
+
+		Ext.Ajax.request(extParams);
+	}, //get()
 
 	/**
 	 * sends request to dataMiner
@@ -170,24 +265,26 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 *              .params       [Object]    see options.callbackParams
 	 *          .callbackParams [Object]   params for callback function
 	 *          .callbackScope  [Object]   scope for callback
+	 * @return [void]
 	 */
 	request: function(options) {
 		if (undefined === Ext.Ajax.url) {
-			ma.console.error('Error in %s.request(): First you must set dataMiner URL. Use %s.setDefaultParams().', this._fullName, this._fullName);
+			ma.console.errorAt('First you must set dataMiner URL. Use method setDefaultParams().', this._fullName, 'request');
 		}
 
 		var extParams = {
 			params: {
 				object: options.object,
 				method: options.method,
-				token : ma.Cookie.get('token')
+				token : ma.ajax._token
 			},
 			callback: this._requestCallback,
 			scope: { //fictive object to serve as scope and keep options required by callback
 				ajax: this,
 				scope: options.callbackScope,
 				params: options.callbackParams,
-				callback: options.callback
+				callback: options.callback,
+				getJson: true
 			} //scope object
 		};
 
@@ -218,27 +315,31 @@ Ext.extend(ma._Ajax, ma.Base, {
 		if (success) {
 			res = {
 				text: response.responseText,
-				json: ajax.jsonDecode(response.responseText),
-				headers: response.getResponseHeader,
+				json: (true ? ajax.jsonDecode(response.responseText) : null),
+				headers: response.getAllResponseHeaders(),
 				status: {
 					code: response.status,
 					text: response.statusText
 				} //status
 			};
-			callback.call(callbackScope, res, res.json.result, callbackParams);
+
+			if (res.json && undefined !== res.json.result) {
+				success = res.json.result;
+			}
 		}
 		else {
 			res = {
 				text: '',
-				json: {},
-				headers: response.getResponseHeader,
+				json: null,
+				headers: response.getAllResponseHeaders(),
 				status: {
 					code: response.status,
 					text: response.statusText
 				} //status
 			};
-			callback.call(callbackScope, res, false, callbackParams);
 		}
+
+		callback.call(callbackScope, res, success, callbackParams);
 	}, //_requestCallback()
 
 	/**
@@ -248,7 +349,12 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @return [Object] decoded JSON
 	 */
 	jsonDecode: function(response) {
+		try {
 		return Ext.util.JSON.decode(response, true); //true to convert invalid JSON to NULL
+		}
+		catch (err) {
+			return null;
+		}
 	}, //jsonDecode()
 
 	/**
@@ -301,19 +407,19 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 *          .callbackParams [Object]   params for callback function
 	 *          .callbackScope  [Object]   scope for callback
 	 */
-	getJS: function(options) {
+	getJs: function(options) {
 		if ('string' === typeof options) {
 			options = { url: options }; //convert file name to url param
 		}
 		if (undefined === options.url) {
-			ma.console.error('Error in %s.getJS(): You must define URL of the file.', this._fullName);
+			ma.console.errorAt('You must define URL of the file.', this._fullName, 'getJs');
 		}
 
 		var params = {
 			url: options.url,
 			method: 'GET',
 
-			callback: this._getJSCallback,
+			callback: this._getJsCallback,
 			scope: { //fictive object to serve as scope and keep options required by callback
 				ajax: this,
 				scope: options.callbackScope,
@@ -323,7 +429,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 		};
 
 		Ext.Ajax.request(params);
-	}, //ma.ajax.getJS()
+	}, //ma.ajax.getJs()
 
 	/**
 	 * @private
@@ -334,18 +440,23 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @param  [Object] response (see Ext.Ajax.request)
 	 * @return [void]
 	 */
-	_getJSCallback: function(options, success, response) {
+	_getJsCallback: function(options, success, response) {
 		var
 			ajax            = this.ajax,
 			callbackScope   = this.scope || window,
 			callbackParams  = this.params || {},
-			callback        = this.callback || ajax._defaultJSCallback,
+			callback        = this.callback || ajax._defaultJsCallback,
 			res;
 
 		callbackParams.url = options.url;
 
 		if (success) {
+			try {
 			res = ma.util._eval(response.responseText);
+			}
+			catch (error) {
+				ma.console.errorAt('Loaded file is not valid JavaScript', this._fullName, 'getJs::response');
+			}
 			res = {
 				value: res,
 				headers: response.getResponseHeader,
@@ -367,7 +478,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 			};
 			callback.call(callbackScope, res, false, callbackParams);
 		}
-	}, //getJSCallback()
+	}, //getJsCallback()
 
 	/**
 	 * @private
@@ -377,19 +488,19 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @param {Object} success
 	 * @param {Object} params
 	 */
-	_defaultJSCallback: function(response, success, params) {
+	_defaultJsCallback: function(response, success, params) {
 		if (success) {
 			if (response.value) {
-				ma.console.log('JS file %s loaded successfully with result: %s.', params.url, response.value);
+				ma.console.debug('Js file %s loaded successfully with result: %s.', params.url, response.value);
 			}
 			else {
-				ma.console.log('JS file %s loaded successfully.', params.url);
+				ma.console.debug('Js file %s loaded successfully.', params.url);
 			}
 		}
 		else {
-			ma.console.log('Loading of JS file %s failed.', params.url);
+			ma.console.error('Loading of Js file %s failed.', params.url);
 		}
-	} //_defaultJSCallback()
+	} //_defaultJsCallback()
 
 }); //extend(ma._Ajax)
 
