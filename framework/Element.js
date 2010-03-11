@@ -167,6 +167,18 @@ Ext.extend(ma.Element, ma.Base, {
 	}, //set()
 
 	/**
+	 * sets content of this element
+	 *
+	 * @param  content [String]
+	 * @return [void]
+	 */
+	setContent: function(content) {
+		this.set({
+			innerHTML: content
+		});
+	}, //setContent()
+
+	/**
 	 * creates new element from given config and adds it to the end of childs of this element
 	 *
 	 * @param  [ma.Element / DOMelement / Object / Array] element, its configuration or list of elements or they configurations

@@ -174,7 +174,11 @@ ma.console = {
 		}
 
 		ma.console._log('[ERROR]' + fileInfo + ' ' + message + ' (call stack: ' + ma.console._getCallStack().join(' <- ') + ')');
-	}, //error()
+
+		if (this !== window) { //if called as onError handler, do not throw the error again
+			throw message;
+		}
+	}, //errorAt()
 
 	/**
 	 * adds an error into log; accepts placable params
@@ -187,13 +191,8 @@ ma.console = {
 		message = ma.console._printf.apply(this, arguments);
 		ma.console._log('[ERROR] ' + message + ' (call stack: ' + ma.console._getCallStack().join(' <- ') + ')');
 
-		if (window.console) {
-			console.trace(this);
-			console.error(message);
-		}
-
 		throw message;
-	},
+	}, //error()
 
 	/**
 	 * adds a warning into log
@@ -209,7 +208,7 @@ ma.console = {
 		if (window.console) {
 			console.warn(message);
 		}
-	},
+	}, //warn()
 
 	/**
 	 * adds an information into log
@@ -219,11 +218,11 @@ ma.console = {
 	 */
 	info: function(message) {
 		message = ma.console._printf.apply(this, arguments);
-		ma.console._log(message);
+		ma.console._log('[INFO ] ' + message);
 		if (window.console) {
 			console.info(message);
 		}
-	},
+	}, //info()
 
 	/**
 	 * adds a debug information into log
@@ -233,11 +232,11 @@ ma.console = {
 	 */
 	debug: function(message) {
 		message = ma.console._printf.apply(this, arguments);
-		ma.console._log(message);
+		ma.console._log('[DEBUG] ' + message);
 		if (window.console) {
 			console.log(message);
 		}
-	},
+	}, //debug()
 
 	/**
 	 * adds a log message into log
@@ -248,12 +247,12 @@ ma.console = {
 	 */
 	log: function(message) {
 		message = ma.console._printf.apply(this, arguments);
-		ma.console._log(message);
+		ma.console._log('[OTHER] ' + message);
 
 		if (window.console) {
 			console.log(message);
 		}
-	},
+	}, //log()
 
 	/**
 	 * counts number of milisecons between time() and timeEnd()
