@@ -303,29 +303,7 @@ ma.util = {
 	 * Same as eval(), just a way to prevent JSlint from reporting eval where its really needed
 	 * note: new versions of JSlint reports this one as well
 	 */
-	_eval: eval,
-
-	/**
-	 * returns referencable simple type
-	 *
-	 * @param {String/Number/Boolean} simple
-	 * @param [Object] object type of String, Number or Boolean (respective to input param)
-	 */
-	getReference: function(simple) {
-		var is = ma.util.is;
-
-		if (is(simple, String)) {
-			return new String(simple);
-		}
-		if (is(simple, Number)) {
-			return new Number(simple);
-		}
-		if (is(simple, Boolean)) {
-			return new Boolean(simple);
-		}
-		//other values are already references (or undefined)
-		return simple;
-	}
+	_eval: eval
 
 };
 
