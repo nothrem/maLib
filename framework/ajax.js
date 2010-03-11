@@ -139,7 +139,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * sets common params for each AJAX request
 	 *
 	 * @param [Object] options
-	 *          .dataMiner  [String] (optional, required for request() method) URL of dataMiner
+	 *          .url        [String] (optional, required for request() method) URL to send requests to
 	 *          .token      [String] (optional, required for request() method) security token for dataMiner
 	 *          .headers    [Object] (optional, default: none) HTTP headers for request; see Ext.Ajax.request.header
 	 *          .noCaching  [String] (optional, default: '_hash') name of param to prevent response caching (e.g. in IE), empty string to allow caching
@@ -148,7 +148,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * Note: Optional params do NOT always set its default value when not present but keeps the previous one; default value is only for first call
 	 */
 	setDefaultParams: function(options) {
-		Ext.Ajax.url = options.dataMiner;
+		Ext.Ajax.url = options.url;
 
 		if (options.header) {
 			Ext.Ajax.defaultHeaders = options.headers;
@@ -256,7 +256,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * sends request to dataMiner
 	 *
 	 * @param [Object] options
-	 *          .object  [String]
+	 *          .data  [Object]
 	 *          .method  [String]
 	 *          .params  [Mixed]
 	 *          .callback       [Function] callback to handle response
@@ -268,15 +268,19 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @return [void]
 	 */
 	request: function(options) {
+		var
+			data,
+			extParams;
+
 		if (undefined === Ext.Ajax.url) {
-			ma.console.errorAt('First you must set dataMiner URL. Use method setDefaultParams().', this._fullName, 'request');
+			Ext.Ajax.url = ma._filePath + '/api/';
+			ma.console.info('No URL set for API, presuming default API URL.');
 		}
 
-		var extParams = {
+		extParams = {
 			params: {
-				object: options.object,
-				method: options.method,
-				token : ma.ajax._token
+				json: this.jsonEncode(options.data),
+				xtoken: ma.ajax._token || ma.Cookie.get('xtoken')
 			},
 			callback: this._requestCallback,
 			scope: { //fictive object to serve as scope and keep options required by callback
@@ -287,10 +291,6 @@ Ext.extend(ma._Ajax, ma.Base, {
 				getJson: true
 			} //scope object
 		};
-
-		if (options.params) { //add params only if they are defined
-			ma.util.merge(extParams, {params: {params: this.jsonEncode(options.params) } } );
-		}
 
 		Ext.Ajax.request(extParams);
 	}, //ma.ajax.request()
