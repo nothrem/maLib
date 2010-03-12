@@ -91,7 +91,6 @@ class api
 	protected $json;
 	protected $getObjectCallback;
 	protected $result;
-	protected $name;
 
 	/**
 	 * @constructor
@@ -119,7 +118,7 @@ class api
 		</code>
 	 */
 	public function __construct($getObjectCallback) {
-$this->name = 'API';
+
 		//check correct params
 		if (!isset($_POST['json'])) {
 			$this->quit('Invalid request');
@@ -128,7 +127,6 @@ $this->name = 'API';
 		$json = json_decode(stripslashes($_POST['json']), true);
 
 		if (is_null($json) || !array_key_exists('method', $json)) {
-			var_dump($json);
 			$this->quit('Invalid JSON');
 		}
 
@@ -222,7 +220,7 @@ $this->name = 'API';
 			die(json_encode(array('error' => 'method failed', 'result' => $this->result)));
 		}
 		else {
-			die(json_encode(array('_error' => $result)));
+			die(json_encode(array('error' => $result)));
 		}
 	}
 
