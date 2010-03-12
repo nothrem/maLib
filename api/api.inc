@@ -91,6 +91,7 @@ class api
 	protected $json;
 	protected $getObjectCallback;
 	protected $result;
+	protected $name;
 
 	/**
 	 * @constructor
@@ -118,23 +119,29 @@ class api
 		</code>
 	 */
 	public function __construct($getObjectCallback) {
-
+$this->name = 'API';
 		//check correct params
 		if (!isset($_POST['json'])) {
 			$this->quit('Invalid request');
 		}
 
-		$json = json_decode($_POST['json'], true);
+		$json = json_decode(stripslashes($_POST['json']), true);
 
 		if (is_null($json) || !array_key_exists('method', $json)) {
+			var_dump($json);
 			$this->quit('Invalid JSON');
 		}
 
 		$this->json = $json;
-		$this->getObjectCallback = $getObjectCallback;
+		$this->setClassLoader($getObjectCallback);
 
 	} //api::__construct
 
+	public function setClassLoader($getObjectCallback) {
+		if (!function_exists($getObjectCallback)) {
+			$this->getObjectCallback = $getObjectCallback;
+		}
+	}
 
 	/**
 	 * runs given method of given object
@@ -173,6 +180,10 @@ class api
 			$object = $this->getObjectCallback($method[0], $method[1]);
 		}
 
+		if (method_exists($object, 'setClassLoader')) { //object with this method needs the callback for getting new classes (e.g. children of this class)
+			$object->setClassLoader($this->getObjectCallback);
+		}
+
 		$methodName = $method[2];
 
 		if (!method_exists($object, '_needSession') || $object->_needSession($methodName)) {
@@ -208,10 +219,10 @@ class api
 			die(json_encode(array('result' => $this->result)));
 		}
 		elseif (false === $result) {
-			die(json_encode(array('error' => 'method failed', result => $this->result)));
+			die(json_encode(array('error' => 'method failed', 'result' => $this->result)));
 		}
 		else {
-			die(json_encode(array('error' => $result)));
+			die(json_encode(array('_error' => $result)));
 		}
 	}
 
@@ -295,6 +306,81 @@ class session {
 
 		return true;
 	} //if (init session)
+}
+
+class batchQuitException extends Exception {}
+
+class batch extends api  {
+	protected $requests;
+	protected $batchParams;
+	protected $batchResult;
+
+	public function __construct() {
+$this->name = 'BATCH';
+		//check correct params
+		$json = json_decode(stripslashes($_POST['json']), true);
+
+		if (!array_key_exists('requests', $json)) {
+			$this->requests = null;
+		}
+		else {
+			$this->requests = $json['requests'];
+		}
+
+		$this->batchParams = $json['params'];
+		$this->batchResult = array();
+	} //batch::__construct
+
+	public function run($input, $output) {
+		if (is_null($this->requests) || 0 === count($this->requests)) {
+			$this->quit('Missing requests');
+		}
+
+		foreach ($this->requests as $request) {
+			$this->json = array(
+				'method' => $request['method'],
+				'params' => $request['params']
+			);
+			try {
+				$this->exec();
+			}
+			catch (batchQuitException $bqe) {
+				//nothing, this is not real Exception
+			}
+		}
+
+		$output = array('batchResult' => $this->batchResult);
+		return true;
+	}
+
+	/**
+	 * returns either JSON OK or error and quits PHP script
+	 *
+	 * @param  [String/Boolean] true means end with OK result, string defines an error message
+	 * @return [void]
+	 */
+	public function quit($result) {
+		if (true === $result) {
+			$this->batchResult[] = array('result' => $this->result);
+			throw new batchQuitException();
+		}
+		elseif (false === $result) {
+			$this->batchResult[] = array('error' => 'method failed', 'result' => $this->result);
+			throw new batchQuitException();
+		}
+		else {
+			$this->batchResult[] = array('error' => $result);
+			throw new batchQuitException();
+		}
+	}
+}
+
+class test {
+	public function copy($input, $output) {
+		$output = $input;
+		$output['tested'] = true;
+		return true;
+	}
 }
 
 ?>
