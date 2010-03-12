@@ -70,11 +70,6 @@ Ext.extend(ma.Observable, Ext.util.Observable, {
 	_fullName: 'ma.Observable',
 	_class: ma.Observable,
 
-/**
- * @scope ma.Event
- *
- * list of methods that must have each new ma.event instance (used by constructor)
- */
 	/**
 	 * notifies all observers about this event
 	 *

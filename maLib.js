@@ -37,7 +37,7 @@ ma = {
 		ma._filePath = path;
 		//load external files and frameworks
 		ma.loadJS('external/printf');
-		ma.loadJS('external/ExtJs3core/ext-core');
+		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-debug' : 'external/ExtJs3core/ext-core');
 		//load internal files
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
@@ -346,8 +346,12 @@ ma = {
 	_getMyPath: function() {
 		var
 			head = document.getElementsByTagName('HEAD')[0],
-			regex = /src=\"(.*)\/maLib\.js\"/g,
+			regex = /src=\"(.*)\/maLib\.js(\?debug)?\"/g,
 			path = regex.exec(head.innerHTML);
+
+		if (path && path [2]) {
+			ma._isDebug = true;
+		}
 
 		return (path && path[1]) ? path[1] : '';
 	}, //_getMyPath

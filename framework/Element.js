@@ -29,7 +29,7 @@
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
  * @return [Object] new element wrapper, existing wrapper of the element or null on error
  *
- * @event onContentLoaded   fires when an Element has loaded its content from server (see ma.Element.getContent())
+ * @event contentLoaded   fires when an Element has loaded its content from server (see ma.Element.getContent())
  *           <param>   [ma.Element]  instance of the Element that got new content
  *
  * @example Possibilities of ma.Element objects
@@ -65,19 +65,6 @@ ma.Element = function(domElement){
 	}
 
 	ma.Element.superclass.constructor.apply(this, arguments);
-
-	this.addEvents(
-		//HTML events
-		'onClick', 'onDblClick',
-		'onMouseDown', 'onMouseUp', 'onMouseMove', 'onMouseOver', 'onMouseOut',
-		'onKeyDown', 'onKeyUp', 'onKeyPress',
-		'onResize', 'onMove',
-		'onFocus', 'onBlur', 'onSelect',
-		'onChange',
-
-		//own events
-		'onContentLoaded'
-	);
 
 	//Create new element from configuration
 	if (!is(domElement, HTMLElement)) { //we only get element configuration
@@ -118,15 +105,18 @@ ma.Element = function(domElement){
 	this.ext = new Ext.Element(domElement); //create Ext wrapper object
 	this.ext._ma_wrapper = this;            //backward reference for wrapper
 
-	//register new element
-	ma.Element._register(this);
-
 	//set other Element's properties
 	this.merge({
 		id:      domElement.id,
 		tagName: domElement.tagName
 	});
+
 	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it trasparent
+
+	this._setEvents();
+
+	//register new element
+	ma.Element._register(this);
 
 	//create children
 	if (is(children, Array)) {
@@ -155,6 +145,89 @@ Ext.extend(ma.Element, ma.Base, {
 	_register: function() {
 		ma.Element._cache[this.id] = this;
 	}, //_register()
+
+	/**
+	 * @private
+	 * sets event handlers for all element's events
+	 *
+	 * @param  [void]
+	 * @return [void]
+	 */
+	_setEvents: function() {
+		var
+			htmlEvents = {
+				'click': { handler: 'onclick', event: 'click' },
+				'doubleClick': { handler: 'ondblclick', event: 'dblClick' },
+				'mouseDown': { handler: 'onmousedown', event: 'mousedown' },
+				'mouseUp': { handler: 'onmouseup', event: 'mouseup' },
+				'mouseMove': { handler: 'onmousemove', event: 'mousemove' },
+				'mouseOver': { handler: 'onmouseover', event: 'mouseover' },
+				'mouseOut': { handler: 'onmouseout', event: 'mouseout' },
+				'keyDown': { handler: 'onkeydown', event: 'keydown' },
+				'keyUp': { handler: 'onkeyup', event: 'keyup' },
+				'keyPress': { handler: 'onkeypress', event: 'keypress' },
+				'onresize': { handler: 'onresize', event: 'resize' },
+				'move': { handler: 'onmove', event: 'move' },
+				'focus': { handler: 'onfocus', event: 'focus' },
+				'blur': { handler: 'onblur', event: 'blur' },
+				'select': { handler: 'onselect', event: 'select' },
+				'change': { handler: 'onchange', event: 'change' },
+				'submit': { handler: 'onsubmit', event: 'submit' },
+				'reset': { handler: 'onreset', event: 'reset' },
+				'unload': { handler: 'onunload', event: 'unload' }
+			},
+			i, cnt;
+
+		this.addEvents('contentLoaded', 'set');
+		for (i in htmlEvents) {
+			this.dom[htmlEvents[i].handler] = this._htmlEventHandler;
+			this.addEvents(i);
+			this._class.htmlEvents[htmlEvents[i].event] = i;
+		}
+	}, //_setEvents
+
+	/**
+	 * @private
+	 * universal HTML event handler that converts BrowserEvent object into more suitable one
+	 *
+	 * @param  [BrowserEvent]
+	 * @return [Boolean] false if event should be canceled
+	 */
+	_htmlEventHandler: function(browserEvent) {
+		var
+			isIE = ma.browser.is(ma.browser.ie),
+			eventName,
+			options,
+			element;
+
+		eventName = ma.Element.htmlEvents[browserEvent.type];
+
+		if (!eventName) {
+			return; //this is not known event
+		}
+
+		//get element wrapper
+		element = new ma.Element(browserEvent.target);
+
+		options = {
+			mouse: {
+				X: browserEvent.clientX,
+				Y: browserEvent.clientY,
+				leftButton: (isIE ? 1 === browserEvent.button : 0 === browserEvent.button),
+				rightButton: (isIE ? 2 === browserEvent.button : 2 === browserEvent.button),
+				middleButton: (isIE ? 4 === browserEvent.button : 1 === browserEvent.button)
+			},
+			keys: {
+				alt: browserEvent.altKey,
+				ctrl: browserEvent.ctrlKey,
+				shift: browserEvent.shiftKey,
+				mac: browserEvent.metaKey
+			},
+			browserEvent: browserEvent
+		};
+
+		return element.notify(eventName, options);
+	}, //_htmlEventHandler
 
 	/**
 	 * sets object properties to given values
@@ -564,7 +637,7 @@ Ext.extend(ma.Element, ma.Base, {
 	_getContentCallback: function(params, success, response) {
 		if (success) {
 			this.mask(false);
-			this.notify(ma.Element.events.onContentLoaded, this);
+			this.notify(ma.Element.events.contentLoaded, this);
 		}
 	},
 
@@ -697,6 +770,9 @@ Ext.apply(ma.Element, {
 	_cache: {},
 
 	_lastId: 0, //used to generate element ids (e.g. 'element_1')
+
+	//stores mapping function of html event names to ma.Element events
+	htmlEvents: {},
 
 	_register: function(element) {
 		ma.Element._cache[element.id] = element;

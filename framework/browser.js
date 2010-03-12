@@ -72,6 +72,10 @@ ma.extend('ma._Browser', ma.Base, {
 	//class properties
 	_info: window.navigator,
 
+	ie: {
+		name:      'Explorer',
+		minVersion: 6
+	},
 	ie6: {
 		name:      'Explorer',
 		minVersion: 6,
