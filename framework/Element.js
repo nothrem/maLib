@@ -31,6 +31,20 @@
  *
  * @event contentLoaded   fires when an Element has loaded its content from server (see ma.Element.getContent())
  *           <param>   [ma.Element]  instance of the Element that got new content
+ * @event HTMLevents      fires any time some HTML event occurs; events are click, doubleClick, mouseMove, keyDown, etc.
+ *           <param>   [Object]      event details
+ *              .mouse      [Object] details about mouse
+ *                .X             [Number]  position of mouse cursor (relative to window)
+ *                .Y             [Number]  position of mouse cursor (relative to window)
+ *                .leftButton    [Boolean] true if left mouse button was clicked (note: on some browsers (e.g. FF) is always True for non-click events (e.g. mouseMove))
+ *                .rightButton   [Boolean] true if right mouse button was clicked (note: on some browsers (e.g. FF) is True for CTRL + leftButton (i.e. secondary click on MacOS))
+ *                .middleButton  [Boolean] true if middle mouse button was clicked
+ *              .keys       [Object] details about pressed keys
+ *                .alt           [Boolean] true if ALT/Option key was pressed
+ *                .ctrl          [Boolean] true if CTRL key was pressed
+ *                .shift         [Boolean] true if SHIFT key was pressed
+ *                .mac           [Boolean] true if MAC/Command key was pressed
+ *              .browserEvent [Object] original event info created by browser (note that on some browsers (e.g. IE) it may change when another event occurs)
  *
  * @example Possibilities of ma.Element objects
 		<code>
@@ -200,14 +214,23 @@ Ext.extend(ma.Element, ma.Base, {
 			options,
 			element;
 
+		if (isIE) {
+			browserEvent = window.event;
+		}
+
+		if (!ma.util.is(browserEvent, Object)) {
+			ma.console.errorAt('Event ' + event + ' without browserEvent ' + browserEvent, this._className, '_htmlEventHandler');
+			return;
+		}
+
+		//get event name and element wrapper
 		eventName = ma.Element.htmlEvents[browserEvent.type];
 
 		if (!eventName) {
 			return; //this is not known event
 		}
 
-		//get element wrapper
-		element = new ma.Element(browserEvent.target);
+		element = new ma.Element(browserEvent[ isIE ? 'srcElement' : 'currentTarget']);
 
 		options = {
 			mouse: {
@@ -221,7 +244,7 @@ Ext.extend(ma.Element, ma.Base, {
 				alt: browserEvent.altKey,
 				ctrl: browserEvent.ctrlKey,
 				shift: browserEvent.shiftKey,
-				mac: browserEvent.metaKey
+				mac: browserEvent.metaKey || false //MAC key available only on FF and Safari
 			},
 			browserEvent: browserEvent
 		};
@@ -805,7 +828,7 @@ Ext.apply(ma.Element, {
 		if (!element) {
 			return false;
 		}
-		if (ma.Element._unsupportedHtmlElement) { //IE or simililat clients that does not support HTMLElement class
+		if (ma._unsupportedHtmlElement) { //IE or simililar clients that does not support HTMLElement class
 			try {
 				return (undefined !== element.nodeType);
 			}
@@ -818,10 +841,3 @@ Ext.apply(ma.Element, {
 		}
 	}
 });
-
-//IE does not support HTMLElement class
-//this creates fictive HTMLElement class to allow to use it in ma.util.is() method instead of native one
-if (!window.HTMLElement) {
-	window.HTMLElement = new (function() {})();
-	ma.Element._unsupportedHtmlElement = true;
-}

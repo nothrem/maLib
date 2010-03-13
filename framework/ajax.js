@@ -452,10 +452,10 @@ Ext.extend(ma._Ajax, ma.Base, {
 
 		if (success) {
 			try {
-			res = ma.util._eval(response.responseText);
+				res = ma.util._eval(response.responseText);
 			}
 			catch (error) {
-				ma.console.errorAt('Loaded file is not valid JavaScript', this._fullName, 'getJs::response');
+				ma.console.errorAt('Loaded file is not valid JavaScript: ' + error.message, this._fullName, 'getJs::response');
 			}
 			res = {
 				value: res,

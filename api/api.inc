@@ -175,7 +175,8 @@ class api
 		$object = $this->getInternalObject($method[0], $method[1]);
 
 		if (is_null($object)) {
-			$object = $this->getObjectCallback($method[0], $method[1]);
+			$methodName = $this->getObjectCallback;
+			$object = $methodName($method[0], $method[1]);
 		}
 
 		if (method_exists($object, 'setClassLoader')) { //object with this method needs the callback for getting new classes (e.g. children of this class)
@@ -233,6 +234,10 @@ class api
 	 */
 	protected function getInternalObject($fileName, $className = null) {
 		$path = dirname(__FILE__) . '/';
+
+		if (!file_exists($path . $fileName . '.inc')) {
+			return null;
+		}
 
 		if (!(include_once($path . $fileName . '.inc'))) {
 			return null;

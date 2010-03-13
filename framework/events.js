@@ -64,8 +64,6 @@ Ext.extend(ma.Observable, Ext.util.Observable, {
 	 * @scope ma.Observable
 	 */
 	// static properties
-	_isMaFx: true,
-	_isInstance: false,
 	_className: 'Observable',
 	_fullName: 'ma.Observable',
 	_class: ma.Observable,
@@ -107,12 +105,6 @@ Ext.extend(ma.Observable, Ext.util.Observable, {
 			},
 			this //scope for function
 		); //each(argument)
-	}, //addEvents()
-
-	/**
-	 * store for event names (can be used as constants)
-	 * @see ma.Observable.addEvents()
-	 */
-	events: {}
+	} //addEvents()
 
 }); //ma.Observable

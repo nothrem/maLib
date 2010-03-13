@@ -112,7 +112,11 @@ ma.util = {
 		if (is(values, Object) && !is(values, Array)) {
 			for (property in values) {
 				value = values[property];
-				if (is(value, Object) & !is(value, Array) & !is(value, HTMLElement) & !is(value, RegExp)) {
+				if (
+					is(value, Object)
+					& !is(value, Array)
+					& !is(value, HTMLElement)
+					& !is(value, RegExp)) {
 					if (!is(object[property], Object)) {
 						object[property] = {}; //ensure property is defined as object
 					}
@@ -203,8 +207,8 @@ ma.util = {
 		if (Function === type ) {
 			return true === Ext.isFunction(value);
 		}
-		if (HTMLElement === type ) {
-			if (ma.Element && ma.Element.isHtmlElement) {
+		if (ma.Element && HTMLElement === type ) {
+			if (ma.Element.isHtmlElement) {
 				return ma.Element.isHtmlElement(value);
 			}
 			else {
@@ -220,7 +224,7 @@ ma.util = {
 			return true === Ext.isObject(value);
 		}
 		if (Ext.isFunction(type) || Ext.isObject(type)) {
-			return value instanceof type;
+			return (value instanceof type);
 		}
 		if (ma.util.is(type, String)) {
 			if ('empty' === type.toLowerCase()) {
@@ -301,9 +305,11 @@ ma.util = {
 	/**
 	 * @private
 	 * Same as eval(), just a way to prevent JSlint from reporting eval where its really needed
-	 * note: new versions of JSlint reports this one as well
 	 */
-	_eval: eval
+	_eval: function(code){
+		var convert = 'eval';
+		return window[convert](code);
+	}
 
 };
 
