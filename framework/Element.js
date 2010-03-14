@@ -102,6 +102,11 @@ ma.Element = function(domElement){
 			delete config.children;
 		}
 
+		if (config.content) {
+			config.innerHTML = config.content;
+			delete config.content;
+		}
+
 		domElement = document.createElement(config.tagName || 'div');
 
 		//clone the config
@@ -299,10 +304,10 @@ Ext.extend(ma.Element, ma.Base, {
 			newEl = new ma.Element(cfg);
 			if (insertBefore) {
 				if (insertBefore instanceof ma.Element) {
-					this.dom.insertBefore(newEl, insertBefore.dom);
+					this.dom.insertBefore(newEl.dom, insertBefore.dom);
 				}
 				else if (ma.Element.isHtmlElement(insertBefore)) {
-					this.dom.insertBefore(newEl, insertBefore);
+					this.dom.insertBefore(newEl.dom, insertBefore);
 				}
 				else {
 					ma.console.error('Unknown type of element in %s.insert()', this._fullName);
@@ -327,12 +332,15 @@ Ext.extend(ma.Element, ma.Base, {
 	 * inserts new Element before given Element
 	 *
 	 * @param  [Object] element configuration (tagName for HTML type, any other for properties)
-	 * @param  [Element] reference to Element the new one should be put before
+	 * @param  [Element] (optional, default: first position) reference to Element the new one should be put before
 	 * @return [Element/Array of Elements] reference to new object (for single object) or array of objects
 	 *
 	 * @note This is only alias for add() method, but add() should be used only for adding to the end!
 	 */
 	insert: function(config, insertBefore) {
+		if (!insertBefore) {
+			insertBefore = this.dom.firstElementChild;
+		}
 		return this.add(config, insertBefore);
 	}, //insert()
 
