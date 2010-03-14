@@ -162,8 +162,8 @@ ma.util = {
 	getUrlParam: function(param){
 		var regexS, regex, value;
 
-		name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-		regexS = "[\\?&]" + name + "=([^&#]*)";
+		param = param.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+		regexS = "[\\?&]" + param + "=([^&#]*)";
 		regex = new RegExp(regexS);
 		value = regex.exec(window.location.href);
 		return (null === value) ? "" : value[1];
@@ -237,70 +237,6 @@ ma.util = {
 		//unknown type, consider it as direct value
 		return value == type;
 	}, //is()
-
-	/**
-	 * executes callback in given scope and with given params
-	 *
-	 * @param  [Callback] options
-	 *            .callback  [Function] (optional, default: no callback)
-	 *            .callbackScope [Object] (optional, default: window)
-	 *            .callbackParams [Array] (optional, default: none)
-	 * @return [Mixed] what returned the callback; undefined for invalid callback
-	 *
-	 * @note: as a type Callback will be called any object that contains properties defined above
-	 */
-	runCallback: function(options) {
-		if (ma.util.is(options.callback, Function)) {
-			return options.callback.apply(options.callbackScope || window, options.callbackParams || []);
-		}
-	},
-
-	/**
-	 * executes given method in a loop (method must accept callback in first param)
-	 *
-	 * @param  [Number] number of milisecond for the loop
-	 * @param  [Callback] function to call
-	 *              .callback [Function]
-	 *                   callback [Callback]
-	 *                   params   [Object]
-	 * @param  [Boolean] (optional, default: false) true to wait before execution, false to call the method now
-	 * @return [void]
-	 */
-	loopCallback: function(interval, callback, wait) {
-		var callbackParams;
-
-		if (ma.util.is(callback, Object) && ma.util.is(callback.callback, Function)) {
-			callbackParams = [ //params for the called method
-				{ //callback
-					callback: ma.util.loopCallback,
-					callbackScope: ma.util,
-					callbackParams: [
-						interval,
-						callback,
-						true //always wait in callback
-					]
-				}, //callback
-				callback.callbackParams
-			];
-			if (true === wait) {
-				ma.util.runCallback.defer(interval, ma.util, [{
-					callback: callback.callback,
-					callbackScope: callback.callbackScope,
-					callbackParams: callbackParams
-				}]);
-			}
-			else {
-				ma.util.runCallback({
-					callback: callback.callback,
-					callbackScope: callback.callbackScope,
-					callbackParams: callbackParams
-				});
-			}
-		}
-		else {
-			ma.console.errorAt('Invalid function.', 'ma.util', 'loopCallback');
-		}
-	},
 
 	/**
 	 * @private

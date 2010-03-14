@@ -39,6 +39,7 @@ ma = {
 		ma.loadJS('external/printf');
 		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-debug' : 'external/ExtJs3core/ext-core');
 		//load internal files
+		ma.loadJS('framework/javascript');
 		ma.loadJS('framework/console');
 		ma.loadJS('framework/util');
 		ma.loadJS('framework/events');
