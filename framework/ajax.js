@@ -195,7 +195,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 				scope: options.callbackScope,
 				params: options.callbackParams,
 				callback: options.callback,
-				getJson: false
+				getJson: options.getJson || false
 			} //scope object
 		};
 
@@ -235,7 +235,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 				scope: options.callbackScope,
 				params: options.callbackParams,
 				callback: options.callback,
-				getJson: false
+				getJson: options.getJson || false
 			} //scope object
 		};
 
@@ -315,7 +315,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 		if (success) {
 			res = {
 				text: response.responseText,
-				json: (true ? ajax.jsonDecode(response.responseText) : null),
+				json: (this.getJson ? ajax.jsonDecode(response.responseText) : null),
 				headers: response.getAllResponseHeaders(),
 				status: {
 					code: response.status,
@@ -323,15 +323,16 @@ Ext.extend(ma._Ajax, ma.Base, {
 				} //status
 			};
 
-			if (res.json && undefined !== res.json.result) {
-				success = res.json.result;
+			if (res.json && undefined !== res.json.error) {
+				success = false;
 			}
 		}
 		else {
+			response = response || {};
 			res = {
 				text: '',
 				json: null,
-				headers: response.getAllResponseHeaders(),
+				headers: (response.getAllResponseHeaders ? response.getAllResponseHeaders() : []),
 				status: {
 					code: response.status,
 					text: response.statusText
@@ -377,16 +378,11 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 */
 	_defaultCallback: function(response, success, params) {
 		if (success) {
-			if (response.json.result) {
+			if (!response.json.error) {
 				ma.console.log('Response to unhandled request recieved successfully with positive result.');
 			}
 			else {
-				if (response.json.error) {
-					ma.console.log('Response to unhandled request recieved successfully but with error: %s.', response.json.error);
-				}
-				else {
-					ma.console.log('Response to unhandled request recieved successfully but with negative result.');
-				}
+				ma.console.log('Response to unhandled request recieved successfully but with error: %s.', response.json.error);
 			}
 		}
 		else {

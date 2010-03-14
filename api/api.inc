@@ -136,7 +136,7 @@ class api
 	} //api::__construct
 
 	public function setClassLoader($getObjectCallback) {
-		if (!function_exists($getObjectCallback)) {
+		if (function_exists($getObjectCallback)) {
 			$this->getObjectCallback = $getObjectCallback;
 		}
 	}
@@ -219,6 +219,9 @@ class api
 		}
 		elseif (false === $result) {
 			die(json_encode(array('error' => 'method failed', 'result' => $this->result)));
+		}
+		elseif (is_null($result)) {
+			die(json_encode(array('error' => 'method did not return either success or failure state', 'result' => $this->result)));
 		}
 		else {
 			die(json_encode(array('error' => $result)));

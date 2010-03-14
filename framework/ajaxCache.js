@@ -62,6 +62,10 @@ ma.ajax.AjaxCache = function() {
 		'onError'
 	);
 
+	this._requests = [];
+	this.defaultParams = {};
+
+
 	ma.util.merge(this.events, this._class.events);
 };
 
@@ -70,16 +74,11 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
  * @scope ma.ajax.AjaxCache
  */
 
-//		this.notify(ma.ajax.events.beforeRequest, {connection: connection, options: options});
-
-	_defaultParams: {},
-	_requests: [],
-
 	/**
 	 * sets common params for each AJAX request
 	 *
 	 * @param [Object] options
-	 *          .dataMiner  [String] (required) URL of dataMiner
+	 *          .url        [String] (required) URL to send request to
 	 *          .headers    [Object] (optional, default: none) HTTP headers for request; see Ext.Ajax.request.header
 	 *          .noCaching  [String] (optional, default: '_hash') name of param to prevent response caching (e.g. in IE), empty string to allow caching
 	 * @return [void]
@@ -104,12 +103,16 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 	 * adds new request to the cache
 	 *
 	 * @param options [Object]
+	 *           .method   [String] (optional, default: request or get depending on if options contains data property) name of method (request, get, post)
+	 *           other params are same as for selected method (see the method under ma.ajax)
 	 * @return [Integer] current number of params (after this one was added)
 	 */
 	add: function(options) {
 		var params = {};
 
+		//first use default params
 		Ext.apply(params, this._defaultParams);
+		//then overwrite default params by the ones defined in options
 		Ext.apply(params, options);
 
 		this._requests.push(params);
@@ -121,15 +124,15 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 	 * adds new request to the cache at the first position
 	 *
 	 * @param options [Object]
+	 *           .method   [String] (optional, default: request or get depending on if options contains data property) name of method (request, get, post)
+	 *           other params are same as for selected method (see the method under ma.ajax)
 	 * @return [Integer] current number of params (after this one was added)
 	 */
 	insert: function(options) {
-		var params = {};
-
-		Ext.apply(params, this._defaultParams);
-		Ext.apply(params, options);
-
-		this._requests.unshift(params);
+		//first use add() to add the request to the end
+		this.add(options);
+		//and then take the last one request and put it to the begining
+		this._requests.unshift(this._requests.pop());
 
 		return this.length();
 	},
@@ -143,18 +146,23 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 	send: function() {
 		var
 			options = this._requests.shift(),
-			params = {};
+			params = {},
+			method;
 
+		//first add request options into method params
 		Ext.apply(params, options);
+		//the overwrite callback in params so the own callback is called (original callback will be in its params)
 		Ext.apply(params, {
 			callback: this._sendCallback,
 			callbackScope: this,
 			callbackParams: options
 		});
 
+		method = options.method || (options.data ? 'request' : 'get');
+
 		this.notify(this._class.events.beforeRequest, {params: options});
 
-		ma.ajax.request(params);
+		ma.ajax[method](params);
 	},
 
 	/**
@@ -188,7 +196,7 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 				}
 		} //success
 
-		params.callback.call(params.callbackScope, response, success, params.callbackParams);
+		ma.util.runCallback(params, [response, success]);
 	} //_requestCallback()
 
 }); //extend(ma._Ajax)
