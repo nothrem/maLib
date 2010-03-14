@@ -196,7 +196,7 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 				}
 		} //success
 
-		ma.util.runCallback(params, [response, success]);
+		params.callback.apply(params.callbackScope, [response, success, params.callbackParams]);
 	} //_requestCallback()
 
 }); //extend(ma._Ajax)

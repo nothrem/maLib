@@ -219,7 +219,7 @@ Ext.extend(ma.Element, ma.Base, {
 		}
 
 		if (!ma.util.is(browserEvent, Object)) {
-			ma.console.errorAt('Event ' + event + ' without browserEvent ' + browserEvent, this._className, '_htmlEventHandler');
+			ma.console.errorAt('Event without browserEvent!', this._className, '_htmlEventHandler');
 			return;
 		}
 
@@ -265,12 +265,12 @@ Ext.extend(ma.Element, ma.Base, {
 	/**
 	 * sets content of this element
 	 *
-	 * @param  content [String]
+	 * @param  content [String] (optional, default: empty)
 	 * @return [void]
 	 */
 	setContent: function(content) {
 		this.set({
-			innerHTML: content
+			innerHTML: content || ''
 		});
 	}, //setContent()
 
