@@ -157,7 +157,7 @@ ma.console = {
 	/**
 	 * adds error in specified file and method into log
 	 *
-	 * @param [String] (required) error message
+	 * @param [String/Array] (required) error message as [String]; or [Array] where first item is [String] with message, others are [Mixed] positional arguments
 	 * @param [String] file where the error happened
 	 * @param [Number/String] line or function name where error happened
 	 * @return [void]
@@ -171,6 +171,10 @@ ma.console = {
 				fileInfo += '::' +  line;
 			}
 			fileInfo = '[' + fileInfo + ']';
+		}
+
+		if (ma.util.is(message, Array)) {
+			message = ma.console._printf.apply(window, message);
 		}
 
 		ma.console._log('[ERROR]' + fileInfo + ' ' + message + ' (call stack: ' + ma.console._getCallStack().join(' <- ') + ')');

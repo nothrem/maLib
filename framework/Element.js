@@ -27,24 +27,21 @@
  * creates new DOM element wrapper object
  *
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
+ *               [Object] configuration
+ *                    .id          [String] (optional, default: 'element_' + index) id of the element
+ *                    .tagName     [String] (optional, dedault: 'div') type of the element (e.g. div, p, ul, table, etc.)
+ *                    .innerHTML   [String] (optional) content of the element in HTML (alias .content can be used)
+ *                    .children    [Array]  (optional) child nodes (see ma.Element.add()) for this element (alias .items can be used); note that setting both innerHTML and children may have unforseen consequences
+ *                    .listeners   [Object] (optional) list of event listeners where key is event name and value is [Function] or [Array of Functions] (alias .on can be used)
+ *
+ *
  * @return [Object] new element wrapper, existing wrapper of the element or null on error
  *
+
  * @event contentLoaded   fires when an Element has loaded its content from server (see ma.Element.getContent())
  *           <param>   [ma.Element]  instance of the Element that got new content
  * @event HTMLevents      fires any time some HTML event occurs; events are click, doubleClick, mouseMove, keyDown, etc.
- *           <param>   [Object]      event details
- *              .mouse      [Object] details about mouse
- *                .X             [Number]  position of mouse cursor (relative to window)
- *                .Y             [Number]  position of mouse cursor (relative to window)
- *                .leftButton    [Boolean] true if left mouse button was clicked (note: on some browsers (e.g. FF) is always True for non-click events (e.g. mouseMove))
- *                .rightButton   [Boolean] true if right mouse button was clicked (note: on some browsers (e.g. FF) is True for CTRL + leftButton (i.e. secondary click on MacOS))
- *                .middleButton  [Boolean] true if middle mouse button was clicked
- *              .keys       [Object] details about pressed keys
- *                .alt           [Boolean] true if ALT/Option key was pressed
- *                .ctrl          [Boolean] true if CTRL key was pressed
- *                .shift         [Boolean] true if SHIFT key was pressed
- *                .mac           [Boolean] true if MAC/Command key was pressed
- *              .browserEvent [Object] original event info created by browser (note that on some browsers (e.g. IE) it may change when another event occurs)
+ *           <param>   [Event]      see ma.util.getEvent()
  *
  * @example Possibilities of ma.Element objects
 		<code>
@@ -64,10 +61,14 @@ ma.Element = function(domElement){
 		is = ma.util.is,
 		config, newConfig,
 		children, //used to create element's children if defined
+		listeners, //event listeners
 		parent;
 
 	if (is(domElement, undefined)) {
 		ma.console.errorAt('Undefined element.', this._fullName, 'constructor');
+	}
+	if (window === domElement) {
+		ma.console.errorAt('Cannot wrap "window" object.', this._fullName, 'constructor');
 	}
 	//if domElement is in fact a ma.Element already, return it (used in some functions for parameter)
 	if (is(domElement, ma.Element)) {
@@ -97,14 +98,23 @@ ma.Element = function(domElement){
 		}
 
 		//get elements children
-		if (config.children) {
-			children = config.children;
+		if (config.children || config.items) {
+			children = config.children || config.items;
 			delete config.children;
+			delete config.items;
 		}
 
+		//convert content to innerHTML
 		if (config.content) {
 			config.innerHTML = config.content;
 			delete config.content;
+		}
+
+		//get events
+		if (config.listeners || config.on) {
+			listeners = config.listeners || config.on;
+			delete config.on;
+			delete config.listeners;
 		}
 
 		domElement = document.createElement(config.tagName || 'div');
@@ -132,7 +142,7 @@ ma.Element = function(domElement){
 
 	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it trasparent
 
-	this._setEvents();
+	this._setEvents(listeners);
 
 	//register new element
 	ma.Element._register(this);
@@ -169,10 +179,10 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @private
 	 * sets event handlers for all element's events
 	 *
-	 * @param  [void]
+	 * @param  [Function/Array] see ma.Element.constructor()::listeners
 	 * @return [void]
 	 */
-	_setEvents: function() {
+	_setEvents: function(listeners) {
 		var
 			htmlEvents = {
 				'click': { handler: 'onclick', event: 'click' },
@@ -195,13 +205,37 @@ Ext.extend(ma.Element, ma.Base, {
 				'reset': { handler: 'onreset', event: 'reset' },
 				'unload': { handler: 'onunload', event: 'unload' }
 			},
-			i, cnt;
+			i, cnt, event;
 
 		this.addEvents('contentLoaded', 'set');
 		for (i in htmlEvents) {
 			this.dom[htmlEvents[i].handler] = this._htmlEventHandler;
 			this.addEvents(i);
 			this._class.htmlEvents[htmlEvents[i].event] = i;
+		}
+
+		//register listeners
+		if (listeners) {
+			for (event in listeners) {
+				if (htmlEvents[event]) {
+					if (ma.util.is(listeners[event], Function)) {
+						this.on(event, listeners[event]);
+					}
+					else if (ma.util.is(listeners[event], Array)) {
+						for (i = 0, cnt = listeners[event].length; i < cnt; i++) {
+							if (ma.util.is(listeners[event][i], Function)) {
+								this.on(event, listeners[event][i]);
+							}
+							else {
+								ma.console.errorAt(['Unsupported listener (index %i, type %s) for event "%s" on Element "%s"', i, typeof listeners[event][i], event, this.id], this._className, '_setEvents');
+							}
+						}
+					}
+					else {
+						ma.console.errorAt(['Unsupported listener (type %s) for event "%s" on Element "%s"', typeof listeners[event], event, this.id], this._className, '_setEvents');
+					}
+				}
+			}
 		}
 	}, //_setEvents
 
@@ -282,7 +316,7 @@ Ext.extend(ma.Element, ma.Base, {
 	/**
 	 * creates new element from given config and adds it to the end of childs of this element
 	 *
-	 * @param  [ma.Element / DOMelement / Object / Array] element, its configuration or list of elements or they configurations
+	 * @param  [ma.Element / DOMelement / Object / Array] element, its configuration or list of elements or their configurations (see ma.Element constructor for details)
 	 * @param  [RESERVED] see ma.Element.insert()
 	 * @return [Element/Array of Elements] reference to new object (for single object) or array of objects
 	 */
@@ -354,7 +388,7 @@ Ext.extend(ma.Element, ma.Base, {
 
 		var parent = this.dom.parentNode;
 
-		if (parent) {
+		if (parent && parent.tagName) { //element document is parent of HTML element but can't be wrapped - and document has no tagName
 			if (parent._ma_wrapper) {
 				//parent element is already wrapped
 				this._parent = parent._ma_wrapper;
@@ -563,7 +597,8 @@ Ext.extend(ma.Element, ma.Base, {
 	getInfo: function() {
 		var
 			dom = this.dom,
-			ext = this.ext;
+			ext = this.ext,
+			win = ma.util.getWindowInfo();
 
 		return {
 			width:         ext.getWidth(),
@@ -572,9 +607,10 @@ Ext.extend(ma.Element, ma.Base, {
 			contentHeight: ext.getHeight(true),
 
 			left:   ext.getLeft(),
-			right:  ext.getRight(),
+			right:  win.width - ext.getRight(),
 			top:    ext.getTop(),
-			bottom: ext.getBottom()
+			bottom: win.height - ext.getBottom()
+
 		};
 	}, //getInfo()
 
@@ -686,63 +722,25 @@ Ext.extend(ma.Element, ma.Base, {
 		}
 		else {
 			//create new mask for this element
-			size = this.getInfo();
 			mask = new ma.Element({
 				id: id + 'mask',
 				style: {
 					display: 'none',
 					backgroundColor: 'gray',
 					position: 'absolute',
-					left: size.left + 'px',
-					top: size.top + 'px',
-					width: size.width + 'px',
-					height: size.height + 'px',
 					cursor: 'wait',
 					zIndex: 99999
 				},
 				children: [
 					{
-						tagName: 'table',
-						id: id + 'maskFrame',
+						tagName: 'span',
+						id: id + 'maskText',
 						style: {
-							position: 'absolute'
-						},
-						children: [
-							{
-								tagName: 'tbody',
-								children: [
-									{
-										tagName: 'tr',
-										children: [
-											{
-												tagName: 'td',
-												children: [
-													{
-														tagName: 'img',
-														alt: '',
-														src: 'img/loading.dots.gif'
-													}
-												] //maskFrame tbody tr td.first children
-											},
-											{
-												tagName: 'td',
-												children: [
-													{
-														id: id + 'maskText',
-														innerHTML: 'Loading...',
-														style: {
-															fontSize: '50px',
-															paddingLeft: '1em'
-														}
-													}
-												] //maskFrame tbody tr td.second children
-											}
-										] //maskFrame tbody tr children
-									}
-								] //maskFrame .tbody children
-							}
-						] //maskFrame children
-					} //maskFrame
+							background: 'url(' + ma._filePath + '/img/loading.dots.gif) left center no-repeat',
+							fontSize: '50px',
+							paddingLeft: '2em'
+						}
+					}
 				] //mask children
 			});
 
@@ -759,11 +757,55 @@ Ext.extend(ma.Element, ma.Base, {
 			mask.setText = function(text){
 				this._maskText.dom.innerHTML = text;
 			}; //mask.setText()
+			mask.setText('Loading...');
 
+			ma.browser.on('resize', this._resizeMask.setScope(this));
 			return mask;
 
 		} //create mask
 	}, //_getMask()
+
+	_resizeMask: function(ev) {
+		var
+			size = this.getInfo(),
+			win = (ev ? ev.window : ma.util.getWindowInfo()),
+			mask = this._mask,
+			text = mask._maskText,
+			tSize = text.getInfo(),
+			pos;
+
+		if ('BODY' === this.tagName) { //body may be smaller that the window, but masked should be whole window
+			size = {
+				left: 0,
+				right: 0,
+				bottom: 0,
+				top: 0,
+				width: win.width,
+				height: win.height
+			};
+		}
+
+		pos = mask.ext.getPositioning();
+		ma.util.merge(pos, {
+				position: 'absolute',
+				left:   size.left,
+				right:  size.right,
+				top:    size.top,
+				bottom: size.bottom,
+				'z-index': 9999
+			}
+		); //merge
+		mask.ext.setPositioning(pos);
+
+		pos = text.ext.getPositioning();
+		ma.util.merge(pos, {
+				position: 'relative',
+				left:   Math.half(size.width  - tSize.width),
+				top:    Math.half(size.height - tSize.height)
+			}
+		); //merge
+		text.ext.setPositioning(pos);
+	},
 
 	mask: function(showMask, text) {
 		var
@@ -772,14 +814,18 @@ Ext.extend(ma.Element, ma.Base, {
 
 		if (false === showMask) {
 			mask.ext.setOpacity(0, true);
-			mask.hide.defer(100, mask);
+			mask.hide.defer(400, mask); //set opacity animates for 350ms
 		}
 		else {
 			if (is(text, String) && !is(text, 'empty')) {
 				mask.setText(text);
 			}
+			else {
+				mask.setText('');
+			}
 			mask.ext.setOpacity(0);
 			mask.show();
+			this._resizeMask();
 			mask.ext.setOpacity(0.9, true);
 		}
 	}

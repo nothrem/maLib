@@ -34,16 +34,16 @@
 			alert('Firefox 1.5 and Firefox 2.0 are not supported anymore!');
 		}
 	</code>
+
+ * @event resize   fires when browser's window is resized
+ *           <param>   [Event]  see ma.util.getEvent()
  */
 ma._Browser = function() {
 	var version;
 
 	this._class.superclass.constructor.apply(this, arguments);
 
-	this.addEvents(
-	);
-
-	ma.util.merge(this.events, this._class.events);
+	this.addEvents('resize');
 
 	//add handlers for events
 
@@ -57,7 +57,7 @@ ma._Browser = function() {
 		_os:      version.os
 	}); //merge properties
 
-
+	this.body = new ma.Element(Ext.getBody().dom);
 };
 
 ma.extend('ma._Browser', ma.Base, {
@@ -238,6 +238,15 @@ ma.extend('ma._Browser', ma.Base, {
 		}
 
 		return true; //no condition found
+	},
+
+	_onResize: function(browserEvent) {
+		browserEvent = ma.util.getEvent(browserEvent);
+		this.notify(ma._Browser.events.resize, browserEvent);
+	},
+
+	mask: function(showMask, text) {
+		this.body.mask.apply(this.body, arguments);
 	}
 }); //extend(ma._Browser)
 
@@ -246,6 +255,7 @@ ma.extend('ma._Browser', ma.Base, {
  */
 ma._Browser._init = function(){
 	ma.browser = new ma._Browser();
+	window.onresize = ma.browser._onResize.setScope(ma.browser);
 };
 
 ma.registerInitFunction(ma._Browser._init);

@@ -145,3 +145,20 @@ Function.prototype.setScope = function(scope, params) {
 		method.apply(scope, args);
 	};
 }; //callback()
+
+/**
+ * return the number divided by 2 in integer
+ *
+ * @param  [Number] number to divide
+ * @param  [Boolean] (optional, default: false) false = round the number down, true = round the number up
+ */
+Math.half = function(number, roundUp) {
+	var result = number / 2;
+
+	if (true === true) {
+		return Math.ceil(result);
+	}
+	else {
+		return Math.floor(result);
+	}
+};
