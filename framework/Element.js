@@ -310,18 +310,15 @@ Ext.extend(ma.Element, ma.Base, {
 			cfg = config[i];
 			newEl = new ma.Element(cfg);
 			if (insertBefore) {
+				if (ma.Element.isHtmlElement(insertBefore)) {
+					insertBefore = new ma.Element(insertBefore);
+				}
 				if (insertBefore instanceof ma.Element) {
-					this.dom.insertBefore(newEl.dom, insertBefore.dom);
-				}
-				else if (ma.Element.isHtmlElement(insertBefore)) {
-					this.dom.insertBefore(newEl.dom, insertBefore);
-				}
-				else {
-					ma.console.error('Unknown type of element in %s.insert()', this._fullName);
+					newEl.ext.insertBefore(insertBefore.ext);
 				}
 			}
 			else {
-				this.dom.appendChild(newEl.dom);
+				this.ext.appendChild(newEl.ext);
 			}
 			elements.push(newEl);
 			newEl.parent = this; //backward reference
@@ -346,7 +343,13 @@ Ext.extend(ma.Element, ma.Base, {
 	 */
 	insert: function(config, insertBefore) {
 		if (!insertBefore) {
-			insertBefore = this.dom.firstElementChild;
+			insertBefore = this.ext.first();
+			if (insertBefore) {
+				insertBefore = new ma.Element(insertBefore.dom);
+			}
+			else {
+				insertBefore = undefined; //probably the parent element is empty - use add() instead of insert()
+			}
 		}
 		return this.add(config, insertBefore);
 	}, //insert()
@@ -855,7 +858,7 @@ Ext.apply(ma.Element, {
 		if (!element) {
 			return false;
 		}
-		if (ma._unsupportedHtmlElement) { //IE or simililar clients that does not support HTMLElement class
+		if ('string' === typeof HTMLElement) { //IE or simililar clients that does not support HTMLElement as class, maLib's created string replacement
 			try {
 				return (undefined !== element.nodeType);
 			}

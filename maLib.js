@@ -411,7 +411,6 @@ ma = {
 //this creates fictive HTMLElement class to allow to use it in ma.util.is() method instead of native one
 if (!window.HTMLElement) {
 	window.HTMLElement = 'HTMLElement';
-	ma._unsupportedHtmlElement = true;
 }
 
 
