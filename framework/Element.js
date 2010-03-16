@@ -804,6 +804,29 @@ Ext.extend(ma.Element, ma.Base, {
 			this._resizeMask();
 			mask.ext.setOpacity(0.9, true);
 		}
+	},
+
+	/**
+	 * makes the element appear from transparent into solid state (in 350ms)
+	 *
+	 * @param  [void]
+	 * @return [Element] this element
+	 */
+	animateIn: function() {
+		this.ext.setOpacity(0);
+		this.ext.setOpacity(1, true);
+		return this;
+	},
+
+	/**
+	 * makes the element disappers from the page (by making it transparent in 350ms)
+	 *
+	 * @param  [void]
+	 * @return [Element] this element
+	 */
+	animateOut: function() {
+		this.ext.setOpacity(0, true);
+		return this;
 	}
 
 }); //extend(ma.Element)
