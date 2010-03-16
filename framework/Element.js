@@ -59,7 +59,7 @@
 ma.Element = function(domElement){
 	var
 		is = ma.util.is,
-		config, newConfig,
+		config,
 		children, //used to create element's children if defined
 		listeners, //event listeners
 		parent;
@@ -88,6 +88,9 @@ ma.Element = function(domElement){
 			config = {
 				tagName: config
 			};
+		}
+		else {
+			config = ma.util.clone(config);
 		}
 
 		if (config.id) {
@@ -119,12 +122,11 @@ ma.Element = function(domElement){
 
 		domElement = document.createElement(config.tagName || 'div');
 
-		//clone the config
-		newConfig = ma.util.clone(config, {
+		ma.util.merge(config, {
 			id: config.id || 'element_' + (ma.Element._lastId++)
 		}); //clone config
-		delete newConfig.tagName;
-		ma.util.merge(domElement, newConfig);
+		delete config.tagName;
+		ma.util.merge(domElement, config);
 
 	}
 
@@ -763,7 +765,7 @@ Ext.extend(ma.Element, ma.Base, {
 
 		pos = mask.ext.getPositioning();
 		ma.util.merge(pos, {
-				position: 'absolute',
+				position: 'fixed',
 				left:   size.left,
 				right:  size.right,
 				top:    size.top,
