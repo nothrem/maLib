@@ -186,11 +186,25 @@ ma.util = {
 	 * @return [Boolean] true when value equals to given type
 	 */
 	is: function(value, type) {
+		if ('string' === typeof type) {
+			if ('empty' === type.toLowerCase()) {
+				return Ext.isEmpty(value);
+			}
+			if ('zero' === type.toLowerCase()) {
+				return Ext.isEmpty(value) || 0 === value || false === value;
+			}
+		}
 		if (undefined === type) {
 			return undefined === value;
 		}
+		else if (undefined === value) {
+			return false;
+		}
 		if (null === type) {
 			return null === value;
+		}
+		else if (null === value) {
+			return false;
 		}
 		if (String === type ) {
 			return 'string' === typeof value || value instanceof String;
@@ -225,14 +239,6 @@ ma.util = {
 		}
 		if (Ext.isFunction(type) || Ext.isObject(type)) {
 			return (value instanceof type);
-		}
-		if (ma.util.is(type, String)) {
-			if ('empty' === type.toLowerCase()) {
-				return Ext.isEmpty(value);
-			}
-			if ('zero' === type.toLowerCase()) {
-				return Ext.isEmpty(value) || 0 === value || false === value;
-			}
 		}
 		//unknown type, consider it as direct value
 		return value == type;

@@ -64,7 +64,7 @@ ma.Element = function(domElement){
 		listeners, //event listeners
 		parent;
 
-	if (is(domElement, undefined)) {
+	if (is(domElement, 'empty')) {
 		ma.console.errorAt('Undefined element.', this._fullName, 'constructor');
 	}
 	if (window === domElement) {
@@ -248,47 +248,20 @@ Ext.extend(ma.Element, ma.Base, {
 	 */
 	_htmlEventHandler: function(browserEvent) {
 		var
-			isIE = ma.browser.is(ma.browser.ie),
 			eventName,
 			options,
 			element;
 
-		if (isIE) {
-			browserEvent = window.event;
-		}
-
-		if (!ma.util.is(browserEvent, Object)) {
-			ma.console.errorAt('Event without browserEvent!', this._className, '_htmlEventHandler');
-			return;
-		}
+		options = ma.util.getEvent(browserEvent);
 
 		//get event name and element wrapper
-		eventName = ma.Element.htmlEvents[browserEvent.type];
+		eventName = ma.Element.htmlEvents[options.browserEvent.type];
 
-		if (!eventName) {
-			return; //this is not known event
+		if (!eventName || !options.element) {
+			return; //this is not known event or is not called on valid element
 		}
 
-		element = new ma.Element(browserEvent[ isIE ? 'srcElement' : 'currentTarget']);
-
-		options = {
-			mouse: {
-				X: browserEvent.clientX,
-				Y: browserEvent.clientY,
-				leftButton: (isIE ? 1 === browserEvent.button : 0 === browserEvent.button),
-				rightButton: (isIE ? 2 === browserEvent.button : 2 === browserEvent.button),
-				middleButton: (isIE ? 4 === browserEvent.button : 1 === browserEvent.button)
-			},
-			keys: {
-				alt: browserEvent.altKey,
-				ctrl: browserEvent.ctrlKey,
-				shift: browserEvent.shiftKey,
-				mac: browserEvent.metaKey || false //MAC key available only on FF and Safari
-			},
-			browserEvent: browserEvent
-		};
-
-		return element.notify(eventName, options);
+		return options.element.notify(eventName, options);
 	}, //_htmlEventHandler
 
 	/**
