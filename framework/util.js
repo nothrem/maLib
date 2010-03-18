@@ -273,17 +273,14 @@ ma.util = {
 	 *                .mac           [Boolean] true if MAC/Command key was pressed
 	 *              .browserEvent [Object] original event info created by browser (note that on some browsers (e.g. IE) it may change when another event occurs)
 	 */
-	getEvent: function(browserEvent) {
+	getEvent: function(extEvent) {
 		var
 			element,
+			browserEvent = extEvent.browserEvent,
 			isIE = ma.browser.is(ma.browser.ie);
 
 
-		if (isIE) {
-			browserEvent = window.event;
-		}
-
-		element = browserEvent[ isIE ? 'srcElement' : 'currentTarget'];
+		element = extEvent.getTarget();
 
 		return {
 			element: (ma.Element.isHtmlElement(element) ? new ma.Element(element) : undefined),
@@ -296,6 +293,7 @@ ma.util = {
 				middleButton: (isIE ? 4 === browserEvent.button : 1 === browserEvent.button)
 			},
 			keys: {
+				code: extEvent.getKey(),
 				alt: browserEvent.altKey,
 				ctrl: browserEvent.ctrlKey,
 				shift: browserEvent.shiftKey,

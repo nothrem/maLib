@@ -197,7 +197,7 @@ Ext.extend(ma.Element, ma.Base, {
 				'keyDown': { handler: 'onkeydown', event: 'keydown' },
 				'keyUp': { handler: 'onkeyup', event: 'keyup' },
 				'keyPress': { handler: 'onkeypress', event: 'keypress' },
-				'onresize': { handler: 'onresize', event: 'resize' },
+				'resize': { handler: 'onresize', event: 'resize' },
 				'move': { handler: 'onmove', event: 'move' },
 				'focus': { handler: 'onfocus', event: 'focus' },
 				'blur': { handler: 'onblur', event: 'blur' },
@@ -211,7 +211,7 @@ Ext.extend(ma.Element, ma.Base, {
 
 		this.addEvents('contentLoaded', 'set');
 		for (i in htmlEvents) {
-			this.dom[htmlEvents[i].handler] = this._htmlEventHandler;
+			this.ext.on(htmlEvents[i].event, this._htmlEventHandler.setScope(this));
 			this.addEvents(i);
 			this._class.htmlEvents[htmlEvents[i].event] = i;
 		}
@@ -248,13 +248,14 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @param  [BrowserEvent]
 	 * @return [Boolean] false if event should be canceled
 	 */
-	_htmlEventHandler: function(browserEvent) {
+	_htmlEventHandler: function(extEvent) {
 		var
 			eventName,
 			options,
-			element;
+			element,
+			result;
 
-		options = ma.util.getEvent(browserEvent);
+		options = ma.util.getEvent(extEvent);
 
 		//get event name and element wrapper
 		eventName = ma.Element.htmlEvents[options.browserEvent.type];
@@ -263,7 +264,10 @@ Ext.extend(ma.Element, ma.Base, {
 			return; //this is not known event or is not called on valid element
 		}
 
-		return options.element.notify(eventName, options);
+		result = options.element.notify(eventName, options);
+		if (!result) {
+			extEvent.stopEvent();
+		}
 	}, //_htmlEventHandler
 
 	/**
@@ -743,10 +747,10 @@ Ext.extend(ma.Element, ma.Base, {
 		} //create mask
 	}, //_getMask()
 
-	_resizeMask: function(ev) {
+	_resizeMask: function() {
 		var
 			size = this.getInfo(),
-			win = (ev ? ev.window : ma.util.getWindowInfo()),
+			win = ma.util.getWindowInfo(),
 			mask = this._mask,
 			text = mask._maskText,
 			tSize = text.getInfo(),

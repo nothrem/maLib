@@ -24,6 +24,10 @@
 /**
  * Singleton object to handle browser, window and document
  *
+ * @event resize          fires when browser window is resized
+ *           <param>   [void]      no params for this event; use ma.util.getWindowInfo() to get current window size
+ *
+ *
  * @example How to use
 	<code>
 		ma.browser.setPageTitle('This is my page');
@@ -240,9 +244,8 @@ ma.extend('ma._Browser', ma.Base, {
 		return true; //no condition found
 	},
 
-	_onResize: function(browserEvent) {
-		browserEvent = ma.util.getEvent(browserEvent);
-		this.notify(ma._Browser.events.resize, browserEvent);
+	_onResize: function() {
+		this.notify(ma._Browser.events.resize);
 	},
 
 	mask: function(showMask, text) {
