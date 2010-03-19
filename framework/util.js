@@ -40,8 +40,32 @@ ma.util = {
 	 *
 	 * @see printf function from C++
 	 */
-	printf: window.printf ||
-	function(message){
+	printf: function(message) {
+		var
+			args = ma.util.getArguments(arguments, 1),
+			placeholder,
+			regexp = /\%([0-9])+/,
+			i = 0; //for safety
+
+		placeholder = regexp.exec(message);
+		while (null !== placeholder) {
+			//message contains positional params
+			message = message.replace(placeholder[0], args[placeholder[1]-1]);
+			placeholder = regexp.exec(message); //get next placeholder
+
+			if (100 < i++) {
+				ma.errorAt('Reached recursion limit: ' + message, 'ma.util', 'printf');
+				return message;
+			}
+		}
+
+		if (-1 !== message.indexOf('%')) {
+			//there are still some placeholders remaining
+			if (window.printf) {
+				message = window.printf.apply(window, args);
+			}
+		}
+
 		return message;
 	}, //printf()
 	/**
@@ -301,6 +325,17 @@ ma.util = {
 			},
 			browserEvent: browserEvent
 		};
+	},
+
+	/**
+	 * Converts function Arguments to full-featured array
+	 *
+	 * @param  [Arguments] arguments of the calling method
+	 * @param  [Number] (optional, default: 0) number of arguments to ignore (e.g. if first 2 params are fixed and the rest is optional)
+	 * @return [Array]
+	 */
+	getArguments: function(args, skipCount) {
+		return Array.prototype.slice.call(args, skipCount || 0);
 	}
 
 };
