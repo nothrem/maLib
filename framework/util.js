@@ -307,6 +307,7 @@ ma.util = {
 		element = extEvent.getTarget();
 
 		return {
+			event: extEvent.type,
 			element: (ma.Element.isHtmlElement(element) ? new ma.Element(element) : undefined),
 			window: ma.util.getWindowInfo(),
 			mouse: {

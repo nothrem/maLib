@@ -400,7 +400,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 * @param [Object] options
 	 *          .url  [String]
 	 *
-	 *          .callback       [Function] callback to handle response
+	 *          .callback       [Function/String] callback to handle response; it can be passed as string in case the method is from the loaded JS (then it's called only with callbackParams in the scope from string)
 	 *              .response     [Object]    response from server
 	 *              .success      [Boolean]   true if response is OK
 	 *              .params       [Object]    see options.callbackParams
@@ -465,7 +465,15 @@ Ext.extend(ma._Ajax, ma.Base, {
 					text: response.statusText
 				} //status
 			};
-			callback.call(callbackScope, res, true, callbackParams);
+			if (ma.util.is(callback, Function)) {
+				callback.call(callbackScope, res, true, callbackParams);
+			}
+			else if (ma.util.is(callback, String)) {
+				ma._getNamespace(callback).call(callbackParams);
+			}
+			else {
+				ma.console.errorAt('Invalid callback type', 'ma.ajax', 'getJs');
+			}
 		}
 		else {
 			res = {

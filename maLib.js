@@ -130,7 +130,7 @@ ma = {
 	 *
 	 * @param  namespace    [String]
 	 * @param  baseScope    [Object] (optional, default: window) reference to object where to start looking for namespace
-	 * @return [Array] (null for invalid namespace)
+	 * @return [Array] (empty for invalid namespace; see errorIndex and errorName)
 	 *           indexes    [String] parsed namespace path (e.g. ['window', 'document', 'body']
 	 *           .length    [Integer] number of path parts (note that this is standard Array property)
 	 *           .namespace [String] original namespace (e.g. 'window.document.body')
@@ -138,6 +138,7 @@ ma = {
 	 *           .scopeName [String] namespace w/o/ node (e.g. 'window.document'); empty if namespace is direct child of baseScope
 	 *           .node      [Object] reference to node (e.g. reference to window.document.body); undefined if node is invalid; NULL if node is NULL (in this case error is empty)
 	 *           .scope     [Object] reference to scope (e.g. reference to window.document); undefined if a path part is invalid; NULL if errorName is NULL
+	 *           .call      [Function] if node if function, calls is in its scope and given params and returns its result; otherwise returns undefined; note that it must be called in scope of this array
 	 *           .errorIndex[Integer] index of path part that is undefined (path part must be defined and not NULL; node must be defined but can be NULL)
 	 *                                is undefined when whole namespace is valid; -1 if only last node is invalid (i.e. scope is valid)
 	 *           .errorName [String]  name of node that is invalid
@@ -184,6 +185,12 @@ ma = {
 		else {
 			path.node = undefined;
 		}
+
+		path.call = function() {
+			if (undefined === this.errorIndex && ma.util.is(this.node, Function)) {
+				this.node.apply(this.scope, arguments);
+			}
+		};
 
 		return path;
 	},

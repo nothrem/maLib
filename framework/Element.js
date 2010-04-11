@@ -32,6 +32,7 @@
  *                    .tagName     [String] (optional, dedault: 'div') type of the element (e.g. div, p, ul, table, etc.)
  *                    .innerHTML   [String] (optional) content of the element in HTML (alias .content can be used)
  *                    .children    [Array]  (optional) child nodes (see ma.Element.add()) for this element (alias .items can be used); note that setting both innerHTML and children may have unforseen consequences
+ *                                            if children is string ' ' (space) then <br> element is created, while '-' creates <hr>
  *                    .listeners   [Object] (optional) list of event listeners where key is event name and value is [Function] or [Array of Functions] (alias .on can be used)
  *
  *
@@ -73,6 +74,10 @@ ma.Element = function(domElement){
 	//if domElement is in fact a ma.Element already, return it (used in some functions for parameter)
 	if (is(domElement, ma.Element)) {
 		return domElement;
+	}
+	//if domElement is Ext's Element, use the DOM instead
+	if (is(domElement, Ext.Element)) {
+		domElement = domElement.dom;
 	}
 	//if domElement is already wrapped, return the wrapper
 	if (is(domElement, HTMLElement) && is(domElement._ma_wrapper, ma.Element)) {
@@ -221,12 +226,12 @@ Ext.extend(ma.Element, ma.Base, {
 			for (event in listeners) {
 				if (htmlEvents[event]) {
 					if (ma.util.is(listeners[event], Function)) {
-						this.on(event, listeners[event]);
+						this.on(event, this._htmlHandlerHelper.createDelegate(this, [listeners[event]]));
 					}
 					else if (ma.util.is(listeners[event], Array)) {
 						for (i = 0, cnt = listeners[event].length; i < cnt; i++) {
 							if (ma.util.is(listeners[event][i], Function)) {
-								this.on(event, listeners[event][i]);
+								this.on(event, this._htmlHandlerHelper.createDelegate(this, [listeners[event][i]]));
 							}
 							else {
 								ma.console.errorAt(['Unsupported listener (index %i, type %s) for event "%s" on Element "%s"', i, typeof listeners[event][i], event, this.id], this._className, '_setEvents');
@@ -239,7 +244,18 @@ Ext.extend(ma.Element, ma.Base, {
 				}
 			}
 		}
-	}, //_setEvents
+	}, //_setEvents()
+
+	/**
+	 * @private
+	 * used as wrapper for html event handler - makes sure event is canceled unless method returns True
+	 *
+	 * @param  [Function] listener to call
+	 * @return [Boolean] returns false unless function returns True (e.i. undefined is converted to false)
+	 */
+	_htmlHandlerHelper: function(k_listener) {
+		return (true === k_listener.call(this));
+	}, //_htmlHandlerHelper()
 
 	/**
 	 * @private
@@ -268,7 +284,7 @@ Ext.extend(ma.Element, ma.Base, {
 		if (!result) {
 			extEvent.stopEvent();
 		}
-	}, //_htmlEventHandler
+	}, //_htmlEventHandler()
 
 	/**
 	 * sets object properties to given values
@@ -314,6 +330,12 @@ Ext.extend(ma.Element, ma.Base, {
 		//add element(s)
 		for (i = 0, cnt = config.length; i < cnt; i++) {
 			cfg = config[i];
+			if (' ' === cfg) {
+				cfg = { tagName: 'br' };
+			}
+			else if ('-' === cfg) {
+				cfg = { tagName: 'hr' };
+			}
 			newEl = new ma.Element(cfg);
 			if (insertBefore) {
 				if (ma.Element.isHtmlElement(insertBefore)) {
@@ -443,24 +465,22 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [Element] reference to child; undefined if element does not have such child
 	 */
 	getChildByIndex: function(index) {
-		var child;
+		var
+			child = this.ext.first(),
+			i;
 
-		if (!this.dom.childNodes) {
-			return undefined; //does not have any children
+		if (!child) {
+			return;
 		}
 
-		child = this.dom.childNodes[index];
-
-		if (!ma.util.is(child, HTMLElement)) {
-			return undefined; //this child does not exist (or is not valid HTMLElement)
+		for (i = 0; i < index; i++) {
+			child = child.ext.next();
+			if (!child) {
+				return;
+			}
 		}
 
-		if (child._ma_wrapper) {
-			return child._ma_wrapper; //this element is already wrapped
-		}
-		else {
-			return new ma.Element(child); //create new wrapper
-		}
+		return new ma.Element(child); //create new wrapper
 	}, //getChildByIndex()
 
 	/**
@@ -504,6 +524,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 * Removes this element from DOM
 	 */
 	remove: function() {
+		this.removeAllChildren();
 		this.ext.remove();
 		delete this._parent;
 	},
@@ -550,19 +571,12 @@ Ext.extend(ma.Element, ma.Base, {
 	 */
 	removeAllChildren: function() {
 		var
-			el = this.dom,
-			child = el.firstChild,
-			wrapper;
+			child = this.getChildByIndex(0);
 
 		while (child) {
-			wrapper = child._ma_wrapper;
-			if (wrapper) {
-				//this child has been wrapped
-				delete wrapper._parent; //remove reference to parent -> helps GC to remove the object from memory
-			}
-			el.removeChild(child);
+			child.remove();
 
-			child = el.firstChild; //go to next child
+			child = this.getChildByIndex(0); //go to next child
 		} //while (for each child)
 	}, //removeAll()
 
@@ -639,11 +653,7 @@ Ext.extend(ma.Element, ma.Base, {
 	/**
 	 * loads HTML content from server
 	 *
-	 * @param  [String / Object} either URL of the HTML file or options for dataMiner
-	 *             .object  [String]
-	 *             .method  [String]
-	 *             .params  [Mixed]
-	 *             (note that other values available for ma.ajax.request() are ignored here; you can use onContentLoaded event for callback)
+	 * @param  [String] URL of a HTML file
 	 */
 	getContent: function(url) {
 		var
@@ -652,30 +662,15 @@ Ext.extend(ma.Element, ma.Base, {
 
 		this.mask();
 
-		if (ma.util.is(url, String)) {
-			options = url;
-		}
-		else {
-			if (undefined === Ext.Ajax.url) {
-				ma.console.error('Error in %s.getContent(): First you must set dataMiner URL. Use %s.setDefaultParams().', this._fullName, ma.ajax._fullName);
-			}
-			options = {
-				url: Ext.Ajax.url,
-				params: {
-					object: url.object,
-					method: url.method,
-					token : ma.Cookie.get('token')
-				}
-			};
-			if (url.params) { //add params only if they are defined
-				ma.util.merge(options, {param: {params: this.jsonEncode(url.params) } } );
-			}
+		if (!ma.util.is(url, String)) {
+			ma.console.errorAt('Invalid URL for content', this._className, 'getContent');
 		}
 
-		this.ext.load(options, {}, callback); //this.ext.load();
-	},
+		this.ext.load(url, {}, callback); //this.ext.load();
+	}, //getContent()
 
 	/**
+	 * @private
 	 * handles loading of new content into the element
 	 *
 	 * @param  [Object]  params
@@ -688,7 +683,7 @@ Ext.extend(ma.Element, ma.Base, {
 			this.mask(false);
 			this.notify(ma.Element.events.contentLoaded, this);
 		}
-	},
+	}, //_getContentCallback()
 
 	_getMask: function() {
 		var
@@ -787,8 +782,15 @@ Ext.extend(ma.Element, ma.Base, {
 			}
 		); //merge
 		text.ext.setPositioning(pos);
-	},
+	}, //_resizeMask()
 
+	/**
+	 * Masks this element
+	 *
+	 * @param  [Boolean/String] (optional, default: true) true/false to show/hide the mask; if String, will be considered as second param with first param True
+	 * @param  [String] text to show in the mask
+	 * @return [void]
+	 */
 	mask: function(showMask, text) {
 		var
 			is = ma.util.is,
@@ -799,6 +801,9 @@ Ext.extend(ma.Element, ma.Base, {
 			mask.hide.defer(400, mask); //set opacity animates for 350ms
 		}
 		else {
+			if (is(showMask, String)) {
+				text = showMask;
+			}
 			if (is(text, String) && !is(text, 'empty')) {
 				mask.setText(text);
 			}
@@ -810,7 +815,7 @@ Ext.extend(ma.Element, ma.Base, {
 			this._resizeMask();
 			mask.ext.setOpacity(0.9, true);
 		}
-	},
+	}, //mask()
 
 	/**
 	 * makes the element appear from transparent into solid state (in 350ms)
@@ -822,18 +827,28 @@ Ext.extend(ma.Element, ma.Base, {
 		this.ext.setOpacity(0);
 		this.ext.setOpacity(1, true);
 		return this;
-	},
+	}, //animateIn()
 
 	/**
 	 * makes the element disappers from the page (by making it transparent in 350ms)
 	 *
-	 * @param  [void]
+	 * @param  [Boolean] if true, element will be deleted after it fades out
 	 * @return [Element] this element
 	 */
-	animateOut: function() {
-		this.ext.setOpacity(0, true);
+	animateOut: function(deleteSelf) {
+		this.ext.setOpacity(0, (true === deleteSelf ? { callback: this.remove, scope: this } : true));
 		return this;
-	}
+	}, //animateOut()
+
+	/**
+	 * returns value of the element (if it has a 'value' property)
+	 *
+	 * @param  [void]
+	 * @return [Mixed] value of 'value' property of the HTML element
+	 */
+	getValue: function() {
+		return this.dom.value;
+	} //getValue()
 
 }); //extend(ma.Element)
 
