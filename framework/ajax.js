@@ -257,8 +257,8 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 *
 	 * @param [Object] options
 	 *          .data  [Object]
-	 *          .method  [String]
-	 *          .params  [Mixed]
+	 *              .method  [String]
+	 *              .params  [Mixed]
 	 *          .callback       [Function] callback to handle response
 	 *              .response     [Object]    response from server
 	 *              .success      [Boolean]   true if response is OK
@@ -275,6 +275,10 @@ Ext.extend(ma._Ajax, ma.Base, {
 		if (undefined === Ext.Ajax.url) {
 			Ext.Ajax.url = ma._filePath + '/api/';
 			ma.console.info('No URL set for API, presuming default API URL.');
+		}
+
+		if (undefined === options.data) {
+			ma.console.errorAt('Undefined data param.', 'ma.ajax', 'request');
 		}
 
 		extParams = {

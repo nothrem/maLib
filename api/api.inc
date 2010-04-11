@@ -255,6 +255,16 @@ class api
 		return new $Class();
 	}
 
+	public static function expect($input, $expected) {
+
+		foreach ($expected as $key) {
+			if (!array_key_exists($key, $input)) {
+				return $key;
+			}
+		}
+		return false;
+	}
+
 }
 
 class session {
@@ -386,6 +396,196 @@ class test {
 		$output = $input;
 		$output['tested'] = true;
 		return true;
+	}
+}
+
+/**
+ * jsonSQL database
+ *
+ * versions:
+ *    0.1
+ *       - supports SELECT command with ability to filter columns
+ *       - supports FROM command with ability to open jsonDB files
+ *       - supports WHERE command with simple comparing conditions
+ *       - supports LIMIT command to filter from/to rows
+ */
+class db {
+	const MIN_SUPPORTED_VERSION = 0.1;
+	const MAX_SUPPORTED_VERSION = 0.1;
+	/**
+	 * processes jsonSQL query
+	 *
+	 * @param  [Object] input parameters
+	 *             .select  [String/Array] returns data from DB file; string '' (or any non-array value) returns all data; otherwise returns only columns listed in the array (empty array returns only list of empty objects - usable for only counting available items)
+	 *             .from    [Strng] name of the DB file (i.e. path on server)
+	 *             .where   [Object] conditions for filtering items (array key is columns name, value is expected value); empty array means no condition; if condition value is array, it's considered as subvalue conditions
+	 *             .limit   [Number/String/Array]
+	 *                         number  = returns given number of items (starting by the first one); same goes for string containing single number
+	 *                         string  = should contain single number (see above) or two numbers separated by comma (,) - then its converted to array (see below)
+	 *                         array   = array with two number defines start and count of items to return; if only one number is defined, it's considered as limit (and start is 0)
+	 * @param  [&Array of Object] requested data
+	 * @return [Boolean/String]
+	 */
+	public function query($input, $output) {
+		if (array_key_exists('select', $input)) {
+			$expect = api::expect($input, array('from', 'where'));
+
+			if ($expect) {
+				return 'Missing required parameter ' . $expect;
+			}
+
+			$result = $this->getDb($input['from']);
+
+			if (is_string($result)) {
+				return $result;
+			}
+			else {
+				$input['from'] = $result;
+			}
+
+			$output = $this->select($input);
+
+			return true;
+		}
+	}
+
+	/**
+	 * checks gived data against given conditions
+	 *
+	 * @param  [Mixed] data to check
+	 * @param  [Mixed/Array] array with conditions or value to match with data
+	 * @return [Boolean] true if data matches all of the conditions
+	 */
+	protected function match($data, $conditions) {
+		if (is_array($conditions)) {
+			foreach ($conditions as $column => $value) {
+				if (array_key_exists($column, $data)) {
+					if (!$this->match($data[$column], $value)) { //recursive call
+						return false;
+					}
+				}
+				else {
+					return false; //column not found = does not match
+				}
+			}
+			return true; //no non-matching condition found - data are OK
+		}
+		else if ($data === $conditions) {
+			return true; //end of recursion
+		}
+		else {
+			return false; //unknown condition or does not match (end of recursion)
+		}
+	}
+
+	/**
+	 * performs SELECT operation
+	 *
+	 * @param  [Object] input params in jsonSQL format
+	 * @return [Array] found columns
+	 */
+	protected function select($input) {
+		$from = $input['from'];
+		$columns = $input['select'];
+		$conditions = $input['where'];
+		if (array_key_exists('limit', $input)) {
+			$limit = $input['limit'];
+			if (is_numeric($limit)) {
+				$limit = array(0, $limit);
+			}
+			else {
+				if (is_string($limit)) {
+					$limit = explode(',', $limit);
+				}
+				if (!is_array($limit)) {
+					return 'Invalid limit type';
+				}
+				if (1 === count($limit)) {
+					array_unshift($limit, 0);
+				}
+			}
+		}
+		else {
+			$limit = false;
+		}
+
+		$output = array();
+		$totalCount = 0;
+		$matchCount = 0;
+		foreach ($from['data'] as $item) {
+			$outputItem = array();
+			$totalCount++;
+			if (!$this->match($item, $conditions)) {
+				continue; //skip this item
+			}
+			$matchCount++;
+			if (is_array($columns)) {
+				foreach ($columns as $column) {
+					if (array_key_exists($column, $item)) {
+						$outputItem[$column] = $item[$column];
+					}
+				}
+			}
+			else {
+				$outputItem = $item;
+			}
+			$output['rows'][] = $outputItem;
+		}
+
+		if ($limit AND 0 < $limit[1]) {
+			$output['rows'] = array_slice($output['rows'], $limit[0], $limit[1]);
+		}
+
+		$output['totalCount'] = $totalCount;
+		$output['matchCount'] = $matchCount;
+		$output['rowsCount'] = count($output['rows']);
+		$output['skipCount'] = $limit[0];
+
+		return $output;
+	}
+
+	/**
+	 * returns decoded database
+	 *
+	 * @param  [String] name of database
+	 * @return [Array] decoded json
+	 */
+	protected function getDb($name) {
+
+		if (defined('DB_ROOT')) {
+			$path = DB_ROOT . $name;
+		}
+		else {
+			$path = getcwd();
+			$path = $path . '/' . $name;
+		}
+
+		if (file_exists($path . '.json')) {
+			$path .= '.json';
+		}
+
+		if (!file_exists($path)) {
+			return 'Missing DB file ' . $path;
+		}
+
+		$file = file_get_contents($path);
+		$json = json_decode($file, true);
+
+		if (!$json OR !array_key_exists('jsonDB', $json)) {
+			return 'Invalid DB file ' . $path;
+		}
+		elseif (db::MIN_SUPPORTED_VERSION > $json['jsonDB']){
+			return 'Old DB file version, upgrade your jsonDB to ' . db::MIN_SUPPORTED_VERSION;
+		}
+		elseif (db::MAX_SUPPORTED_VERSION < $json['jsonDB']){
+			return 'Unsupported DB file version, this jsonSQL supports jsonDB up to ' . db::MAX_SUPPORTED_VERSION;
+		}
+
+		if (!array_key_exists('data', $json) || !is_array($json['data'])) {
+			$json['data'] = array(); //empty DB - allow to write into it
+		}
+
+		return $json;
 	}
 }
 

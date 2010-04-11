@@ -20,6 +20,7 @@ isnt = function() { return ! is.apply(this, arguments); };
 //shortcuts for console
 ma.log = ma.console.log;
 ma.error = ma.console.error;
+ma.errorAt = ma.console.errorAt;
 
 //shortcut for ma.Element.get() in style of Ext.get()
 ma.get = ma.Element.get;
@@ -30,20 +31,21 @@ ma.get = ma.Element.get;
 /**
  * Initiates AJAX requests by settings dataMiner URL and starting session
  *
- * @param  [String] URL of dataMiner
+ * @param  [String] URL for server API
  * @param  [Function] callback fired when dataMiner is ready to response
  * @return [void]
  */
-ma.initAjax = function(dataMiner, callback) {
-	if (is(dataMiner, Empty)) {
-		ma.error('Please define dataMiner URL in ma.initAjax() method.');
+ma.initAjax = function(url, callback) {
+	if (is(url, Empty)) {
+		ma.error('Please define API URL in ma.initAjax() method.');
 	}
 
-	ma.ajax.setDefaultParams({dataMiner: dataMiner});
+	ma.ajax.setDefaultParams({url: url});
 
 	ma.ajax.request({
-		object: 'Session',
-		method: 'init',
+		data: {
+			method: 'api.session.init'
+		},
 		callbackParams: callback,
 		/**
 		 * callback for session::init, calls user defined callback
@@ -53,7 +55,7 @@ ma.initAjax = function(dataMiner, callback) {
 				callback.call(window);
 			}
 			else {
-				ma.error('Cannot initiate AJAX requests!');
+				ma.errorAt('Cannot initiate AJAX requests!', 'shortcuts', 'initAjax');
 			}
 		}
 	});

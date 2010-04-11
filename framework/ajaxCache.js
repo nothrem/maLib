@@ -149,6 +149,11 @@ ma.extend('ma.ajax.AjaxCache', ma.Base, {
 			params = {},
 			method;
 
+		if (!options) {
+			ma.console.errorAt('No requests to send.', 'ma.ajaxCache', 'send');
+			return;
+		}
+
 		//first add request options into method params
 		Ext.apply(params, options);
 		//the overwrite callback in params so the own callback is called (original callback will be in its params)

@@ -180,7 +180,7 @@ ma.console = {
 		ma.console._log('[ERROR]' + fileInfo + ' ' + message + ' (call stack: ' + ma.console._getCallStack().join(' <- ') + ')');
 
 		if (this !== window) { //if called as onError handler, do not throw the error again
-			throw message;
+			throw fileInfo + ' ' + message;
 		}
 	}, //errorAt()
 
