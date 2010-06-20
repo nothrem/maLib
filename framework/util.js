@@ -259,7 +259,7 @@ ma.util = {
 			}
 		}
 		if (Object === type ) {
-			return true === Ext.isObject(value);
+			return 'object' === typeof value;
 		}
 		if (Ext.isFunction(type) || Ext.isObject(type)) {
 			return (value instanceof type);
