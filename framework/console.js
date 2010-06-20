@@ -342,6 +342,10 @@ ma.console = {
 	 * @return [void]
 	 */
 	openInWindow: function() {
+		if (ma.browser.is({name: 'Firefox'})) {
+			alert('This feature is not working in FireFox; please use FireBug instead.');
+			return;
+		}
 		ma.console.log('Opening Console');
 		if (!ma.console._logConsole) {
 			ma.console._logConsole = window.open();

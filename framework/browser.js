@@ -115,6 +115,10 @@ ma.extend('ma._Browser', ma.Base, {
 		minVersion: 3.5,
 		maxVersion: 3.6
 	},
+	safari: {
+		name:      'Safari',
+		minVersion: 2
+	},
 	safari2: {
 		name:      'Safari',
 		minVersion: 2,
@@ -130,13 +134,22 @@ ma.extend('ma._Browser', ma.Base, {
 		minVersion: 4,
 		maxVersion: 5
 	},
-	opera9: {
+	safari5: {
 		name:      'Safari',
+		minVersion: 5,
+		maxVersion: 6
+	},
+	chrome: {
+		name:      'Chrome',
+		minVersion: 3
+	},
+	opera9: {
+		name:      'Opera',
 		minVersion: 9,
 		maxVersion: 10
 	},
 	opera10: {
-		name:      'Safari',
+		name:      'Opera',
 		minVersion: 10,
 		maxVersion: 11
 	},
@@ -220,8 +233,8 @@ ma.extend('ma._Browser', ma.Base, {
 			return false;
 		}
 
-		if (params.browser) {
-			if (this._name !== params.browser) {
+		if (params.name) {
+			if (this._name !== params.name) {
 				return false;
 			}
 		}
