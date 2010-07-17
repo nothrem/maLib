@@ -327,6 +327,10 @@ Ext.extend(ma._Ajax, ma.Base, {
 				} //status
 			};
 
+			if (res.json) {
+				ajax._outputLog(res.json.log);
+			}
+
 			if (res.json && undefined !== res.json.error) {
 				success = false;
 			}
@@ -346,6 +350,22 @@ Ext.extend(ma._Ajax, ma.Base, {
 
 		callback.call(callbackScope, res, success, callbackParams);
 	}, //_requestCallback()
+
+	/**
+	 * writes to log messages returned by server
+	 *
+	 * @param  [Array] log messages fom server
+	 * @return [void]
+	 */
+	_outputLog: function(log) {
+		var i, cnt;
+
+		if (ma.util.is(log, Array)) {
+			for (i = 0, cnt = log.length; i < cnt; i++) {
+				ma.console.log('Server log: ' + log[i]);
+			}
+		}
+	},
 
 	/**
 	 * converts JSON text to JS object

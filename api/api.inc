@@ -92,6 +92,8 @@ class api
 	protected $getObjectCallback;
 	protected $result;
 
+	protected static $log = array();
+
 	/**
 	 * @constructor
 	 * creates new api instance
@@ -215,17 +217,27 @@ class api
 	 */
 	public function quit($result) {
 		if (true === $result) {
-			die(json_encode(array('result' => $this->result)));
+			die(json_encode(array('result' => $this->result, 'log' => api::$log)));
 		}
 		elseif (false === $result) {
-			die(json_encode(array('error' => 'method failed', 'result' => $this->result)));
+			die(json_encode(array('error' => 'method failed', 'result' => $this->result, 'log' => api::$log)));
 		}
 		elseif (is_null($result)) {
-			die(json_encode(array('error' => 'method did not return either success or failure state', 'result' => $this->result)));
+			die(json_encode(array('error' => 'method did not return either success or failure state', 'result' => $this->result, 'log' => api::$log)));
 		}
 		else {
-			die(json_encode(array('error' => $result)));
+			die(json_encode(array('error' => $result, 'log' => api::$log)));
 		}
+	}
+
+	/**
+	 * saves the message and returns it to client as a server log
+	 *
+	 * @param  [String] message (single row)
+	 * @return [void]
+	 */
+	public static function log($message) {
+		array_push(api::$log, $message);
 	}
 
 	/**
@@ -412,6 +424,9 @@ class test {
 class db {
 	const MIN_SUPPORTED_VERSION = 0.1;
 	const MAX_SUPPORTED_VERSION = 0.1;
+
+	public $access = null;
+
 	/**
 	 * processes jsonSQL query
 	 *
@@ -434,49 +449,39 @@ class db {
 				return 'Missing required parameter ' . $expect;
 			}
 
-			$result = $this->getDb($input['from']);
+			$this->access = $this->init($input['from']);
 
-			if (is_string($result)) {
-				return $result;
-			}
-			else {
-				$input['from'] = $result;
+			if (false === $this->access) {
+				return 'Cannot init specified DB access method';
 			}
 
-			$output = $this->select($input);
+			$output = $this->access->select($input);
 
 			return true;
+		} //select
+	}
+
+	private function init(&$from) {
+		$values = explode(':', $from);
+
+		if (count($values, 2) && $values[0] && class_exists($values[0])) {
+			$class = $values[0];
+			$from = $values[1];
+			return new $class();
+		}
+		elseif (count($values, 1) && class_exists('jsonDb')) {
+			api::log('Access method not specified, accessing DataBase using jsonDb method');
+			$from = $values[0];
+			return new jsonDb();
+		}
+		else {
+			return false;
 		}
 	}
 
-	/**
-	 * checks gived data against given conditions
-	 *
-	 * @param  [Mixed] data to check
-	 * @param  [Mixed/Array] array with conditions or value to match with data
-	 * @return [Boolean] true if data matches all of the conditions
-	 */
-	protected function match($data, $conditions) {
-		if (is_array($conditions)) {
-			foreach ($conditions as $column => $value) {
-				if (array_key_exists($column, $data)) {
-					if (!$this->match($data[$column], $value)) { //recursive call
-						return false;
-					}
-				}
-				else {
-					return false; //column not found = does not match
-				}
-			}
-			return true; //no non-matching condition found - data are OK
-		}
-		else if ($data === $conditions) {
-			return true; //end of recursion
-		}
-		else {
-			return false; //unknown condition or does not match (end of recursion)
-		}
-	}
+} //class db
+
+class jsonDb {
 
 	/**
 	 * performs SELECT operation
@@ -484,8 +489,8 @@ class db {
 	 * @param  [Object] input params in jsonSQL format
 	 * @return [Array] found columns
 	 */
-	protected function select($input) {
-		$from = $input['from'];
+	public function select($input) {
+		$from = $this->getDb($input['from']);
 		$columns = $input['select'];
 		$conditions = $input['where'];
 		if (array_key_exists('limit', $input)) {
@@ -544,6 +549,36 @@ class db {
 		return $output;
 	}
 
+
+	/**
+	 * checks given data against given conditions
+	 *
+	 * @param  [Mixed] data to check
+	 * @param  [Mixed/Array] array with conditions or value to match with data
+	 * @return [Boolean] true if data matches all of the conditions
+	 */
+	protected function match($data, $conditions) {
+		if (is_array($conditions)) {
+			foreach ($conditions as $column => $value) {
+				if (array_key_exists($column, $data)) {
+					if (!$this->match($data[$column], $value)) { //recursive call
+						return false;
+					}
+				}
+				else {
+					return false; //column not found = does not match
+				}
+			}
+			return true; //no non-matching condition found - data are OK
+		}
+		else if ($data === $conditions) {
+			return true; //end of recursion
+		}
+		else {
+			return false; //unknown condition or does not match (end of recursion)
+		}
+	}
+
 	/**
 	 * returns decoded database
 	 *
@@ -587,6 +622,6 @@ class db {
 
 		return $json;
 	}
-}
+} //class db
 
 ?>
