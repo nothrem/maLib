@@ -253,7 +253,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	}, //get()
 
 	/**
-	 * sends request to dataMiner
+	 * sends request to API method
 	 *
 	 * @param [Object] options
 	 *          .data  [Object]
@@ -402,7 +402,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 */
 	_defaultCallback: function(response, success, params) {
 		if (success) {
-			if (!response.json.error) {
+			if (!response.json || !response.json.error) {
 				ma.console.log('Response to unhandled request recieved successfully with positive result.');
 			}
 			else {
@@ -410,7 +410,12 @@ Ext.extend(ma._Ajax, ma.Base, {
 			}
 		}
 		else {
-			ma.console.log('Response to unhandled request failed!');
+			if (response.json && response.json.error) {
+				ma.console.log('Response to unhandled request failed with error: %s.', response.json.error);
+			}
+			else {
+				ma.console.log('Response to unhandled request failed!');
+			}
 		}
 	}, //_defaultCallback()
 
@@ -504,7 +509,15 @@ Ext.extend(ma._Ajax, ma.Base, {
 					text: response.statusText
 				} //status
 			};
-			callback.call(callbackScope, res, false, callbackParams);
+			if (ma.util.is(callback, Function)) {
+				callback.call(callbackScope, res, false, callbackParams);
+			}
+			else if (ma.util.is(callback, String)) {
+				ma.console.errorAt('Cannot call callback "' + callback + '" because JS file was not loaded correctly.', 'ma.ajax', 'getJs');
+			}
+			else {
+				ma.console.errorAt('Invalid callback type', 'ma.ajax', 'getJs');
+			}
 		}
 	}, //getJsCallback()
 

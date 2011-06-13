@@ -95,6 +95,11 @@ ma.extend('ma._Browser', ma.Base, {
 		minVersion: 8,
 		maxVersion: 9
 	},
+	ie9: {
+		name:      'Explorer',
+		minVersion: 9,
+		maxVersion: 10
+	},
 	ff2: {
 		name:      'Firefox',
 		minVersion: 2,
@@ -114,6 +119,16 @@ ma.extend('ma._Browser', ma.Base, {
 		name:      'Firefox',
 		minVersion: 3.5,
 		maxVersion: 3.6
+	},
+	ff36: {
+		name:      'Firefox',
+		minVersion: 3.6,
+		maxVersion: 4
+	},
+	ff4: {
+		name:      'Firefox',
+		minVersion: 4,
+		maxVersion: 5
 	},
 	safari: {
 		name:      'Safari',

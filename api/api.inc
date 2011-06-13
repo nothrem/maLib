@@ -19,15 +19,13 @@
  *
  * 1. from client you need to init session
  *    A) prepare params:
- *      var object = 'session';
- *      var method = 'init';
+ *      var method = 'api.session.init';
  *
  *      var callback = function(response, params) { ... }; //body of callback method see below
  *
- *    B) send AJAX request to your dataMiner via POST with params above
+ *    B) send AJAX request into your api folder via POST with params above
  *      ma.ajax.request({
- *       	object: object,
- *       	method: method,
+ *          data: { method: method }, //why this is in data will be cleared below
  *       	callback: callback
  *       });
  *
@@ -49,25 +47,24 @@
  *
  * 2. send a request
  *    A) prepare params:
- *      object: <name of object you want to use>
  *      method: <name of method to call>
  *      params: JSON-encoded params (optional)
  *
- *      var object = 'htmlContent';
- *      var method = 'get';
+ *      var method = 'html.content.get'; //example html = file, content = class, get = method
  *      var params = {element: 'my-div'};
  *
  *      var callback = function(response, params) { ... }; //body of callback method see below
  *
  *    B) send AJAX request to dataMiner via POST with params above
-  *      ma.ajax.request({
- *       	object: object,
- *       	method: method,
- *       	params: params,
+ *      ma.ajax.request({
+ *         data: { //anything that is inside 'data' will be send to server
+ *             method: method,
+ *             params: params
+ *         },
  *       	callback: callback,
  *       	callbackParams: params //so callback will know which element to set
  *       });
-*
+ *
  *    C) expect JSON-encoded response:
  *       a) value on error:
  *          result:  false
@@ -137,6 +134,15 @@ class api
 
 	} //api::__construct
 
+	/**
+	 * use this to define method that will be responsible for loading files containing classes
+	 *
+	 * @param  [Function] Name (String) of method that can load PHP files; method can be called several times for each class, it should use '*_once' methods for loading
+	 *             param  [String] name of scope of the class (usually this is name of file); may be same as the class name if no scope is defined
+	 *             param  [String] name of class to load; this method should verify that the class exists before returning it!
+	 *             return [Object] new instance of the class; null if the class could not have been loaded
+	 * @return [void]
+	 */
 	public function setClassLoader($getObjectCallback) {
 		if (function_exists($getObjectCallback)) {
 			$this->getObjectCallback = $getObjectCallback;
@@ -248,6 +254,10 @@ class api
 	 * @return [Object] object or null if not found
 	 */
 	protected function getInternalObject($fileName, $className = null) {
+		if ('api' === $fileName && 'session' === $className) {
+			return session::getHandler();
+		}
+
 		$path = dirname(__FILE__) . '/';
 
 		if (!file_exists($path . $fileName . '.inc')) {
@@ -267,6 +277,13 @@ class api
 		return new $Class();
 	}
 
+	/**
+	 * tests that given input files contains expected values
+	 *
+	 * @param  [Array] input params
+	 * @param  [Array] expected params
+	 * @return [Boolean/String] false if all keys were found; on error returns name of first key that was NOT found
+	 */
 	public static function expect($input, $expected) {
 
 		foreach ($expected as $key) {
@@ -279,7 +296,48 @@ class api
 
 }
 
+/**
+ * Handles session and login
+ *
+ * @example How to allow login
+ *   1. create a class that extends this session
+ */
 class session {
+
+	private $isReady = false;
+	private static $instance = null;
+
+	/**
+	 * @protected
+	 * returns instance of the session handler
+	 *
+	 * @return [Object] session class instance
+	 */
+	public static final function getHandler() {
+		if (is_null(session::$instance)) {
+			session::$instance = new session();
+		}
+		return session::$instance;
+	}
+
+	/**
+	 * sets new handler for the session
+	 *
+	 * @param  [String] name of class to use as handler
+	 * @return [void]
+	 */
+	protected static final function setHandler($Class) {
+		if (class_exists($Class)) {
+			session::$instance = new $Class();
+		}
+	}
+
+	private function start() {
+		if (!$this->isReady) {
+			session_start();
+			$this->isReady = true;
+		}
+	}
 
 	/**
 	 * checks that request is from the correct client
@@ -288,11 +346,13 @@ class session {
 	 * @return [Boolean]
 	 */
 	public final static function isValid() {
-		session_start();
+		$session = session::getHandler();
+
+		$session->start();
 
 		//get last values
-		$loginTime = array_key_exists('loginTime', $_SESSION) ? $_SESSION['loginTime'] : time();
-		$client    = array_key_exists('ipAddress', $_SESSION) ? $_SESSION['ipAddress'] : '';
+		$loginTime = $session->_get('internal', 'loginTime', time());
+		$client    = $session->_get('internal', 'ipAddress', '');
 		$token     = md5($loginTime . $client);
 
 		return (isset($_POST['xtoken']) && $token === $_POST['xtoken']);
@@ -307,6 +367,7 @@ class session {
 	public function _needSession($method) {
 		switch ($method) {
 			case 'init':
+			case 'login':
 				return false;
 			default:
 				return true;
@@ -321,30 +382,190 @@ class session {
 	 * @return [Boolean] ok/fail
 	 */
 	public final function init($input, $output) {
+		if (session::isValid()) {
+			if (api::expect($input, array('logout')) || !$input['logout']) {
+				//if session is already created and params does not contain "logout=true", then use existing session
+				$output['mode'] = session::_get('internal', 'loginMode', 0);
+				return true;
+			}
+		}
+
+
 		$now = time();
 		$client = $_SERVER['REMOTE_ADDR'];
 		$token = md5($now . $client);
 
 		setcookie('xtoken', $token, 0, '/');
 
-		session_start();
-		$_SESSION['loginTime'] = $now;
-		$_SESSION['loginMode'] = 0; //only initiated w/o login
-		$_SESSION['ipAddress'] = $client;
+		session::_set('internal', 'loginTime', $now);
+		session::_set('internal', 'loginMode', 0);
+		session::_set('internal', 'ipAddress', $client);
+		session::_remove('roles');
 
+		$output['mode'] = 0;
 		return true;
-	} //if (init session)
+	}
+
+	/**
+	 * allows user to login - this is only simple class that actually does NOT support login, only returns error
+	 *
+	 * @param  [Array] input
+	 *             .username [String]
+	 *             .password [String]
+	 * @param  [Array] output
+	 * @return [Boolean/String]
+	 */
+	public function login($input, $output) {
+		return 'Server does not support login; please see manual for how to support login.';
+	}
+
+	/**
+	 * @private
+	 * sets new value into session store or overwrites old one
+	 *
+	 * @param  [String] name of scope
+	 * @param  [String] name of the value
+	 * @param  [Mixed] the value
+	 * @return [void]
+	 */
+	private static final function _set($scope, $key, $value) {
+		$session = session::getHandler();
+
+		if (!$session->isReady) {
+			api::log('Session not ready, cannot save value ' . $key);
+			return;
+		}
+
+		if (!array_key_exists($scope, $_SESSION)) {
+			$_SESSION[$scope] = array();
+		}
+
+		$_SESSION[$scope][$key] = $value;
+	}
+
+	/**
+	 * sets new value into session store or overwrites old one
+	 *
+	 * @param  [String] name of the value
+	 * @param  [Mixed] the value
+	 * @return [void]
+	 */
+	public static final function set($key, $value) {
+		session::_set('values', $key, $value);
+	}
+
+	/**
+	 * reads value from session store
+	 *
+	 * @param  [String] name of the scope
+	 * @param  [String] name of the value
+	 * @param  [Mixed]  (optional, default: null) default value which is returned in case the value does not exist
+	 * @return [Mixed]  content of the value
+	 */
+	private final function _get($scope, $key, $defaultValue = null) {
+		$session = session::getHandler();
+
+		if (!$session->isReady) {
+			api::log('Session not ready, cannot read value ' . $key);
+			return;
+		}
+
+		if (!array_key_exists($scope, $_SESSION)) {
+			return $defaultValue;
+		}
+
+		return array_key_exists($key, $_SESSION[$scope]) ? $_SESSION[$scope][$key] : $defaultValue;
+	}
+
+	/**
+	 * reads value from session store
+	 *
+	 * @param  [String] name of the value
+	 * @param  [Mixed]  (optional, default: null) default value which is returned in case the value does not exist
+	 * @return [Mixed]  content of the value
+	 */
+	public final function get($key, $defaultValue = null) {
+		session::_get('values', $key, $defaultValue);
+	}
+
+	/**
+	 * removes values from session
+	 *
+	 * @param  [String] name of scope
+	 * @param  [String] (optional, default: all keys) key to remove from scope; if not defined, all keys will be removed
+	 * @return [void]
+	 */
+	protected final function _remove($scope, $key = null) {
+		if (is_null($key)) {
+			unset($_SESSION[$scope]);
+		}
+		else {
+			unset($_SESSION[$scope][$key]);
+		}
+	}
+
+	/**
+	 * sets session into login state and defined roles
+	 *
+	 * @param [Array] list of roles:
+	 *              to allow/deny a role, use format: array("role1" => true, "role2" => false, ...);
+	 *              to simply allow several roles, use formar: array('role1', 'role2', ...);
+	 *              if one of roles is 'admin', it will change the value returned by session::isAdmin() method;
+	 *              note that roles NOT defined in this call but defined in previous call of this method will NOT be removed!
+	 * @return [void]
+	 */
+	public static final function setLogin($roles) {
+		session::getHandler()->start();
+		session::_set('internal', 'loginMode', 1);
+		if (!is_array($roles)) {
+			return;
+		}
+
+		foreach ($roles as $role => $allow) {
+			if (is_string($allow)) { //roles can defined as list of strings
+				$role  = $allow;     //but expected is ['key' => True/False]
+				$allow = true;
+			}
+
+			if ('admin' === $role) {
+				session::_set('internal', 'loginMode', ($allow ? 2 : 1));
+			}
+
+			session::set('roles', $role, $allow);
+		}
+	}
+
+	public static final function isLogged() {
+		return 0 < session::_get('internal', 'loginMode', 0);
+	}
+
+	public static final function isAdmin() {
+		return 1 < session::_get('internal', 'loginMode', 0);
+	}
+
+	public static final function hasRole($role) {
+		return session::_get('roles', $role, false);
+	}
 }
 
+/**
+ * @private
+ * Exception to catch the forced end of batch execution
+ */
 class batchQuitException extends Exception {}
 
+/*
+ * How to use API Batch
+ *
+ *   TODO?
+ */
 class batch extends api  {
 	protected $requests;
 	protected $batchParams;
 	protected $batchResult;
 
 	public function __construct() {
-$this->name = 'BATCH';
+		$this->name = 'BATCH';
 		//check correct params
 		$json = json_decode(stripslashes($_POST['json']), true);
 
@@ -403,7 +624,17 @@ $this->name = 'BATCH';
 	}
 }
 
+/**
+ * Testing API class, can be used to verify that communication with server works correctly
+ */
 class test {
+	/**
+	 * returns what has recieved, adds value 'tested'
+	 *
+	 * @param  [Array] any input params
+	 * @param  [Array] input params + value 'tested = true'
+	 * @return [Boolean] true for success
+	 */
 	public function copy($input, $output) {
 		$output = $input;
 		$output['tested'] = true;
@@ -414,18 +645,72 @@ class test {
 /**
  * jsonSQL database
  *
+ * @example How to send a query
+<code>
+	//select some rows
+	params: {
+		select: 'name, address, phone', //select only these columns
+		from: 'jsonDb:data/users', //access method ('jsonDb') and name of database (here its file 'data/users.json'); other access methods may require other params
+		where: { //select active users who wants to recieve email news
+			active: true,
+			newsSubscribed: true
+		},
+		limit: 100 //get only first 100 users; next 100 can be selected by "limit: [ 100, 100 ]" (first is start, second is count)
+	}
+
+	//insert new row
+	params: {
+		insert: 1,
+		into: 'jsonDb:data/news',
+		values: { date: '2000-01-01', text: 'This is some message' }
+	}
+	//insert new row - simple way
+	params: {
+		insert: { date: '2000-01-01', text: 'This is some message' },
+		into: 'jsonDb:data/news'
+	}
+	//insert several rows (the 'simple way' can be used as well)
+	params: {
+		insert: 3,
+		into: 'jsonDb:data/news',
+		values: [
+			{ date: '2000-01-01', text: 'This is some message 1' },
+			{ date: '2000-01-02', text: 'This is some message 2' },
+			{ date: '2000-01-03', text: 'This is some message 3' }
+		]
+	}
+</code>
+ *
  * versions:
+ *    0.2
+ *       - supports INSERT command to add rows
+ *           - supports INTO command with ability to open DB access (e.g. jsonDb, mySQL, etc.)
+ *           - supports VALUES command with simple comparing conditions (VALUES can be set under INSERT command as well)
  *    0.1
  *       - supports SELECT command with ability to filter columns
- *       - supports FROM command with ability to open jsonDB files
- *       - supports WHERE command with simple comparing conditions
- *       - supports LIMIT command to filter from/to rows
+ *           - supports FROM command with ability to open DB access (e.g. jsonDb, mySQL, etc.)
+ *           - supports WHERE command with simple comparing conditions
+ *           - supports LIMIT command to filter from/to rows
  */
 class db {
 	const MIN_SUPPORTED_VERSION = 0.1;
-	const MAX_SUPPORTED_VERSION = 0.1;
+	const MAX_SUPPORTED_VERSION = 0.2;
 
 	public $access = null;
+
+	/**
+	 * definition of available commands
+	 */
+	private $commands = array(
+		'select' => array(
+			'expect' => array( 'from', 'where' ),
+			'dbKey'  => 'from'
+		),
+		'insert' => array(
+			'expect' => array('into'),
+			'dbKey' => 'into'
+		)
+	);
 
 	/**
 	 * processes jsonSQL query
@@ -442,23 +727,35 @@ class db {
 	 * @return [Boolean/String]
 	 */
 	public function query($input, $output) {
-		if (array_key_exists('select', $input)) {
-			$expect = api::expect($input, array('from', 'where'));
 
-			if ($expect) {
-				return 'Missing required parameter ' . $expect;
-			}
+		foreach ($this->commands as $command => $cmdDef) {
+			if (array_key_exists($command, $input)) {
+				$expect = api::expect($input, $cmdDef['expect']);
 
-			$this->access = $this->init($input['from']);
+				if ($expect) {
+					return 'Missing required parameter ' . $expect;
+				}
 
-			if (false === $this->access) {
-				return 'Cannot init specified DB access method';
-			}
+				$this->access = $this->init($input[$cmdDef['dbKey']]);
 
-			$output = $this->access->select($input);
+				if (false === $this->access) {
+					return 'Cannot init specified DB access method';
+				}
 
-			return true;
+				if (!method_exists($this->access, $command)) {
+					return 'This DB access does not suppor method ' . $command;
+				}
+
+				$result = $this->access->$command($input);
+
+				if (is_string($result)) {
+					return $result;
+				}
+
+				$output = $result;
+				return true;
 		} //select
+		}
 	}
 
 	private function init(&$from) {
@@ -491,6 +788,11 @@ class jsonDb {
 	 */
 	public function select($input) {
 		$from = $this->getDb($input['from']);
+		if (is_string($from)) {
+			return $from;
+		}
+
+
 		$columns = $input['select'];
 		$conditions = $input['where'];
 		if (array_key_exists('limit', $input)) {

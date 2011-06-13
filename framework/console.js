@@ -128,15 +128,17 @@ ma.console = {
 			result = [],
 			callerHead,
 			callerArgs,
-			arg;
+			arg,
+			i, c,
+			failSafe = 0;
 
-		while(caller) {
+		while(failSafe++ < 100 && caller) { //condition with 'failSafe' prevents infinite cycle in case there is some problem in caller reference (or error was already caused by infinite recurence)
 			callerArgs = [];
 			callerHead = new String(caller); //convert function to string containing its code
 			callerHead = callerHead.match(/^(function)(\ )*([^\(]*)(\()([^\)]*)(\))/); //parse only function header "function name(a,b)"
 
 			//get caller's arguments into regullar array
-			for (var i = 0, c = caller.arguments.length; i < c; i++) {
+			for (i = 0, c = caller.arguments.length; i < c; i++) {
 				arg = caller.arguments[i];
 				if (is(arg, false)) { arg = 'False'; }
 				if (is(arg, true)) { arg = 'True'; }

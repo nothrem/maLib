@@ -310,23 +310,25 @@ ma = {
 	 * !can be called only from script within HTML's HEAD or BODY (see ma.ajax.request::isJS for later JS loading)
 	 *
 	 * @param  [String] file name
+	 * @param  [Boolean] (optional, default: false) if true, file will be loaded from web root, otherwise it will be loaded from maLib folder
 	 * @return [void]
 	 */
-	loadJS: function(fileName){
+	loadJS: function(fileName, rootPath){
 		var write = 'write'; //prevents JSlint from saying that document.write is evil ;)
-		document[write]('<script type="text/javascript" src="' + ma._filePath + '/' + fileName + '.js"></script>');
+		document[write]('<script type="text/javascript" src="' + (true === rootPath ? '' : ma._filePath + '/') + fileName + '.js"></script>');
 	}, //loadJS()
 	/**
 	 * load CSS file into HTML head
 	 *
 	 * @param  [String] file name
+	 * @param  [Boolean] (optional, default: false) if true, file will be loaded from web root, otherwise it will be loaded from maLib folder
 	 * @return [void]
 	 */
-	loadCSS: function(fileName){
+	loadCSS: function(fileName, rootPath){
 		var link = document.createElement('LINK');
 		link.setAttribute('type', 'text/css');
 		link.setAttribute('rel', 'stylesheet');
-		link.setAttribute('href', ma._filePath + '/' + fileName + '.css');
+		link.setAttribute('href',  (true === rootPath ? '' : ma._filePath + '/') + fileName + '.css');
 		document.getElementsByTagName("head").item(0).appendChild(link);
 	}, //loadCSS
 	/**

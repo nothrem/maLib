@@ -29,10 +29,11 @@
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
  *               [Object] configuration
  *                    .id          [String] (optional, default: 'element_' + index) id of the element
- *                    .tagName     [String] (optional, dedault: 'div') type of the element (e.g. div, p, ul, table, etc.)
+ *                    .tagName     [String] (optional, default: 'div') type of the element (e.g. div, p, ul, table, etc.)
  *                    .innerHTML   [String] (optional) content of the element in HTML (alias .content can be used)
  *                    .children    [Array]  (optional) child nodes (see ma.Element.add()) for this element (alias .items can be used); note that setting both innerHTML and children may have unforseen consequences
  *                                            if children is string ' ' (space) then <br> element is created, while '-' creates <hr>
+ *                    .childrenTagName [String] (optional, default: 'div') type of the element of the children if not specified otherwise (alias .itemsTagName can be used)
  *                    .listeners   [Object] (optional) list of event listeners where key is event name and value is [Function] or [Array of Functions] (alias .on can be used)
  *
  *
@@ -63,6 +64,8 @@ ma.Element = function(domElement){
 		config,
 		children, //used to create element's children if defined
 		listeners, //event listeners
+		visibility,
+		params,
 		parent;
 
 	if (is(domElement, 'empty')) {
@@ -105,11 +108,28 @@ ma.Element = function(domElement){
 			}
 		}
 
+		//set visibility
+		if (undefined !== config.visible) {
+			visibility = false !== config.visible;
+			delete config.visible;
+		}
+
+		//keep JS params
+		if (undefined !== config.params) {
+			params = config.params;
+			delete config.params;
+		}
+
 		//get elements children
 		if (config.children || config.items) {
 			children = config.children || config.items;
 			delete config.children;
 			delete config.items;
+		}
+		if (config.childrenTagName || config.itemsTagName) {
+			children.defaultTagName = config.childrenTagName || config.itemsTagName;
+			delete config.childrenTagName;
+			delete config.itemsTagName;
 		}
 
 		//convert content to innerHTML
@@ -132,7 +152,6 @@ ma.Element = function(domElement){
 		}); //clone config
 		delete config.tagName;
 		ma.util.merge(domElement, config);
-
 	}
 
 	this.dom = domElement;                  //reference to wrapped object
@@ -148,6 +167,11 @@ ma.Element = function(domElement){
 	});
 
 	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it trasparent
+	if (undefined !== visibility) {
+		this.show(visibility);
+	}
+
+	this._params = params || {};
 
 	this._setEvents(listeners);
 
@@ -218,7 +242,7 @@ Ext.extend(ma.Element, ma.Base, {
 		for (i in htmlEvents) {
 			this.ext.on(htmlEvents[i].event, this._htmlEventHandler.setScope(this));
 			this.addEvents(i);
-			this._class.htmlEvents[htmlEvents[i].event] = i;
+			ma.Element.htmlEvents[htmlEvents[i].event] = i;
 		}
 
 		//register listeners
@@ -268,7 +292,6 @@ Ext.extend(ma.Element, ma.Base, {
 		var
 			eventName,
 			options,
-			element,
 			result;
 
 		options = ma.util.getEvent(extEvent);
@@ -280,11 +303,27 @@ Ext.extend(ma.Element, ma.Base, {
 			return; //this is not known event or is not called on valid element
 		}
 
-		result = options.element.notify(eventName, options);
+		try {
+			result = options.element.notify(eventName, options);
+		} catch (e) { //stops event if its handler caused error
+			extEvent.stopEvent();
+			ma.console.warn('Handler for event %s::%s has crashed, event was stopped.', this.id, eventName);
+			throw e; //throw error again to actually let it go (here we only care about stopping the event)
+		}
 		if (!result) {
 			extEvent.stopEvent();
 		}
 	}, //_htmlEventHandler()
+
+	/**
+	 * Checks that the element is of given type (e.g. div, input, etc.)
+	 *
+	 * @param  [String] tagName
+	 * @return [Boolean]
+	 */
+	is: function(tagName) {
+		return (tagName.toLowerCase() === this.tagName.toLowerCase());
+	}, //is()
 
 	/**
 	 * sets object properties to given values
@@ -320,7 +359,10 @@ Ext.extend(ma.Element, ma.Base, {
 			cfg,
 			i, cnt,
 			newEl,
+			defaultTagName,
 			elements = [];
+
+		defaultTagName = config.defaultTagName;
 
 		//for any non-array, create new Array (even empty for undefined etc.)
 		if (!ma.util.is(config, Array)){
@@ -336,6 +378,7 @@ Ext.extend(ma.Element, ma.Base, {
 			else if ('-' === cfg) {
 				cfg = { tagName: 'hr' };
 			}
+			cfg.tagName = cfg.tagName || defaultTagName;
 			newEl = new ma.Element(cfg);
 			if (insertBefore) {
 				if (ma.Element.isHtmlElement(insertBefore)) {
@@ -825,6 +868,7 @@ Ext.extend(ma.Element, ma.Base, {
 	 */
 	animateIn: function() {
 		this.ext.setOpacity(0);
+		this.show();
 		this.ext.setOpacity(1, true);
 		return this;
 	}, //animateIn()
@@ -841,14 +885,92 @@ Ext.extend(ma.Element, ma.Base, {
 	}, //animateOut()
 
 	/**
-	 * returns value of the element (if it has a 'value' property)
+	 * returns value of the element
 	 *
 	 * @param  [void]
 	 * @return [Mixed] value of 'value' property of the HTML element
 	 */
 	getValue: function() {
-		return this.dom.value;
-	} //getValue()
+		if (undefined !== this.dom.value) {
+			return this.dom.value;
+		}
+		return this.dom.innerHTML;
+	}, //getValue()
+
+	/**
+	 * sets new value for the element
+	 *
+	 * @param  [String]
+	 * @return [void]
+	 */
+	setValue: function(value) {
+		if (undefined !== this.dom.value) {
+			this.dom.value = value;
+		}
+		this.dom.innerHTML = value;
+
+	}, //setValue()
+
+	/**
+	 * sets empty value for the element (presuming it has a 'value' property)
+	 *
+	 * @param  [void]
+	 * @return [void]
+	 */
+	reset: function() {
+		this.setValue('');
+	}, //reset()
+
+	/**
+	 * returns value of a param
+	 *
+	 * @param  [String] name of the param
+	 * @return [Mixed]  value of the param
+	 */
+	getParam: function(name) {
+		return this._params[name];
+	},
+
+	/**
+	 * sets new value to a param
+	 *
+	 * @param  [String] name of the param
+	 * @param  [Mixed]  value to set
+	 * @return [void]
+	 */
+	setParam: function(name, value) {
+		this._params[name] = value;
+	},
+
+	/**
+	 * adds new CSS class to the element
+	 *
+	 * @param  [String/Array] CSS Class or list of them
+	 * @return [void]
+	 */
+	addClass: function(cssClass) {
+		this.ext.addClass(cssClass);
+	},
+
+	/**
+	 * removes CSS class frm the element
+	 *
+	 * @param  [String/Array] CSS Class or list of them
+	 * @return [void]
+	 */
+	removeClass: function(cssClass) {
+		this.ext.removeClass(cssClass);
+	},
+
+	/**
+	 * checks if the element has given CSS class
+	 *
+	 * @param  [String] CSS Class or list of them
+	 * @return [Boolean]
+	 */
+	hasClass: function(cssClass) {
+		return this.ext.hasClass(cssClass);
+	}
 
 }); //extend(ma.Element)
 
@@ -898,6 +1020,12 @@ Ext.apply(ma.Element, {
 		}
 	},
 
+	/**
+	 * tests that given object is HTML element (DOM object)
+	 *
+	 * @param  [Object] element
+	 * @return [Boolean]
+	 */
 	isHtmlElement: function(element) {
 		if (!element) {
 			return false;
@@ -913,5 +1041,64 @@ Ext.apply(ma.Element, {
 		else { //other clients that supports HTMLElement
 			return (element instanceof HTMLElement);
 		}
-	}
+	},
+
+	/**
+	 * calls given method on all the elements
+	 *
+	 * @param  methodName [String] name of ma.Element's method
+	 * @param  elements   [Element/Array] list of elements (any other objects are ignored!)
+	 * @param  params     [Array] param for the method
+	 * @return [Array] list of return values (e.g. content of all elements for method 'getValue')
+	 */
+	callOnElements: function(methodName, elements, params) {
+		var
+			is = ma.util.is,
+			result,
+			resultList = [],
+			element,
+			i, cnt;
+
+		if (!is(elements, Array)) {
+			elements = [ elements ];
+		}
+
+		for (i = 0, cnt = elements.length; i < cnt; i++) {
+			element = elements[i];
+			if (!is(element, ma.Element)) {
+				continue;
+			}
+			if (!is(element[methodName], Function)) {
+				continue;
+			}
+
+			result = element[methodName].apply(element, params);
+			resultList[i] = result;
+			resultList[element.id] = result;
+		}
+
+		return resultList;
+	}, //callOnElements()
+
+	/**
+	 * calls given method on all children of the element
+	 *
+	 * @param  methodName [String] name of ma.Element's method
+	 * @param  element    [Element] an element
+	 * @param  params     [Array] param for the method
+	 * @return [Array] list of return values (e.g. content of all children for method 'getValue')
+	 */
+	callOnChildren: function(methodName, element, params) {
+		var
+			elements = [],
+			extChild = element.ext.first();
+
+		while (extChild) {
+			elements.push(new ma.Element(extChild));
+			extChild = extChild.next();
+		}
+
+		return this.callOnElements(methodName, elements, params);
+	} //callOnChildren()
+
 });
