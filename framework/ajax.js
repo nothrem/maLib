@@ -172,6 +172,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 *
 	 * @param  [Object] options
 	 *          .url     [String] (required)
+	 *          .getJson [Boolean] (optional, default: false) try to decode the response as JSON
 	 *          .params  [String/Object/Function] (optional)
 	 *          .callback       [Function] callback to handle response
 	 *              .response     [Object]    response from server
@@ -211,6 +212,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 *
 	 * @param  [Object] options
 	 *          .url     [String] (required)
+	 *          .getJson [Boolean] (optional, default: false) try to decode the response as JSON
 	 *          .params  [String/Object/Function] (optional) POST data or GET data when .data is defined; Object will be converted to URL-encoded string
 	 *          .data    [String/Object/Function] (optional) POST data; Object will be converted to JSON-encoded string
 	 *          .callback       [Function] callback to handle response
@@ -351,6 +353,36 @@ Ext.extend(ma._Ajax, ma.Base, {
 		callback.call(callbackScope, res, success, callbackParams);
 	}, //_requestCallback()
 
+	batch: function(params) {
+		var
+			requests = [],
+			i, cnt;
+
+		if (isnt(params, Array)) {
+			ma.console.error('Invalid params for Batch');
+		}
+
+		for (i = 0, cnt = params.length; i < cnt; i++) {
+			requests.push(params[i].data);
+		}
+
+		ma.ajax.request({
+			data: {
+				method: 'api.batch',
+				params: {
+					requests: requests
+				}
+			},
+			callback: ma.ajax._batchCallback,
+			callbackScope: ma.ajax,
+			callbackParams: params
+		});
+	},
+
+	_batchCallback: function(response, success, params) {
+		debugger;
+	},
+
 	/**
 	 * writes to log messages returned by server
 	 *
@@ -375,7 +407,7 @@ Ext.extend(ma._Ajax, ma.Base, {
 	 */
 	jsonDecode: function(response) {
 		try {
-		return Ext.util.JSON.decode(response, true); //true to convert invalid JSON to NULL
+			return Ext.util.JSON.decode(response, true); //true to convert invalid JSON to NULL
 		}
 		catch (err) {
 			return null;

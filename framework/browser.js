@@ -272,13 +272,137 @@ ma.extend('ma._Browser', ma.Base, {
 		return true; //no condition found
 	},
 
+	/**
+	 * @private
+	 * handler for window resizing
+	 */
 	_onResize: function() {
 		this.notify(ma._Browser.events.resize);
 	},
 
+	/**
+	 * masks or unmasks whole window
+	 *
+	 * @param {Boolean} show or hide the mask
+	 * @param {String} text to show in the mask
+	 */
 	mask: function(showMask, text) {
 		this.body.mask.apply(this.body, arguments);
+	},
+
+	/**
+	 * @private
+	 * returns 2-level array representing hash in URL
+	 *
+	 * @return {Array} (e.g. "#x&y=1&z=a" will return [["x"],["y","1"],["z","a"]])
+	 */
+	_parseState: function() {
+		var
+			states = window.location.hash,
+			i, cnt, state;
+
+		states = states.replace('#', ''); //hash contains the hash symbol but we don't want it
+
+		if (ma.util.is(states, 'empty')) {
+			return []; //no states yet, just get empty array (otherwise it would generate array with empty string!)
+		}
+
+		states = states.split('&');
+
+		for (i = 0, cnt = states.length; i < cnt; i++) {
+			state = states[i].split('=');
+			states[i] = state; //replace the state in array
+			states[state[0]] = i; //create index value for the state
+		}
+
+		return states;
+	},
+
+	/**
+	 * sets new URL hash from the states
+	 *
+	 * @param {Array} list of states (e.g. [["x"],["y","1"],["z","a"]] will create hash "#x&y=1&z=a")
+	 */
+	_setState: function(states) {
+		var
+			i, cnt, state;
+
+		for (i = 0, cnt = states.length; i < cnt; i++) {
+			states[i] = states[i].join('=');
+		}
+
+		states = states.join('&');
+
+		window.location.hash = states;
+	},
+
+	/**
+	 * sets new state of the application
+	 * the state is saved in URL's hash and is remembered even after reload or when saved in Bookmark
+	 * note: changing URL's hash does not reload the page which means it's save for JS execution
+	 *
+	 * @param  {String/Boolean} name of the state; false to delete all states (note that the hash key "#" will still remain in the URL!)
+	 * @param  {String/Boolean} (optional) value for the state (e.g. "#state=value"; if undefined or True, the state will be saved without value (e.g. "#state"); use False to delete the state completely
+	 * @return {void}
+	 */
+	setState: function(state, value) {
+		var
+			states = this._parseState(),
+			index = states[state];
+
+		if (false === state) { //remove any state in URL
+			this._setState([]);
+			return;
+		}
+
+		if (undefined !== index) { //already defined
+			if (undefined === value || true === value) {
+				states[index].splice(1); //remove the value
+			}
+			else if (false === value) { //remove
+				states.splice(index, 1);
+			}
+			else {
+				states[index][1] = value; //replace the value
+			}
+		}
+		else {
+			if (undefined === value || true === value) {
+				states.push([state]); //must be in array to correctly process
+			}
+			else if (false !== value) { //remove
+				states.push([state, value]);
+			} //else value is false which means "delete" but is does not exist
+		}
+
+		this._setState(states);
+	},
+
+	/**
+	 * returns value of the state
+	 *
+	 * @param {String} name of the state
+	 * @return {String/Boolean} value of the state; false if not defined, true if defined w/o value (e.g. "#state")
+	 */
+	getState: function(state) {
+		var
+			states = this._parseState(),
+			index = states[state],
+			value;
+
+		if (undefined === index) {
+			return false; //not defined
+		}
+
+		value = states[index][1];
+
+		if (undefined === value) {
+			return true; //defined, but without value
+		}
+
+		return value;
 	}
+
 }); //extend(ma._Browser)
 
 /**

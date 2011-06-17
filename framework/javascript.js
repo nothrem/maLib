@@ -142,7 +142,7 @@ Function.prototype.setScope = function(scope, params) {
 
 	return function() {
 		var args = Array.prototype.slice.call(arguments, 0).concat(params); //slice converts Arguments to valid array; then params are added
-		method.apply(scope, args);
+		return method.apply(scope, args);
 	};
 }; //callback()
 

@@ -291,6 +291,7 @@ ma.util = {
 	 *                .rightButton   [Boolean] true if right mouse button was clicked (note: on some browsers (e.g. FF) is True for CTRL + leftButton (i.e. secondary click on MacOS))
 	 *                .middleButton  [Boolean] true if middle mouse button was clicked
 	 *              .keys       [Object] details about pressed keys
+	 *                .code          [Number]  code of the key (e.g. 13 for Enter)
 	 *                .alt           [Boolean] true if ALT/Option key was pressed
 	 *                .ctrl          [Boolean] true if CTRL key was pressed
 	 *                .shift         [Boolean] true if SHIFT key was pressed

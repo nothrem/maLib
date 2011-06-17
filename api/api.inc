@@ -485,7 +485,7 @@ class session {
 	 * @return [Mixed]  content of the value
 	 */
 	public final function get($key, $defaultValue = null) {
-		session::_get('values', $key, $defaultValue);
+		return session::_get('values', $key, $defaultValue);
 	}
 
 	/**

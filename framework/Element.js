@@ -110,7 +110,7 @@ ma.Element = function(domElement){
 
 		//set visibility
 		if (undefined !== config.visible) {
-			visibility = false !== config.visible;
+			visibility = (false !== config.visible);
 			delete config.visible;
 		}
 
@@ -166,7 +166,7 @@ ma.Element = function(domElement){
 		tagName: domElement.tagName
 	});
 
-	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it trasparent
+	this.ext.setVisibilityMode(Ext.Element.DISPLAY); //makes the hide() method to remove element from page instead just make it transparent
 	if (undefined !== visibility) {
 		this.show(visibility);
 	}
@@ -250,12 +250,12 @@ Ext.extend(ma.Element, ma.Base, {
 			for (event in listeners) {
 				if (htmlEvents[event]) {
 					if (ma.util.is(listeners[event], Function)) {
-						this.on(event, this._htmlHandlerHelper.createDelegate(this, [listeners[event]]));
+						this.on(event, this._htmlHandlerHelper.setScope(this, [listeners[event]]));
 					}
 					else if (ma.util.is(listeners[event], Array)) {
 						for (i = 0, cnt = listeners[event].length; i < cnt; i++) {
 							if (ma.util.is(listeners[event][i], Function)) {
-								this.on(event, this._htmlHandlerHelper.createDelegate(this, [listeners[event][i]]));
+								this.on(event, this._htmlHandlerHelper.setScope(this, [listeners[event][i]]));
 							}
 							else {
 								ma.console.errorAt(['Unsupported listener (index %i, type %s) for event "%s" on Element "%s"', i, typeof listeners[event][i], event, this.id], this._className, '_setEvents');
@@ -277,8 +277,10 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @param  [Function] listener to call
 	 * @return [Boolean] returns false unless function returns True (e.i. undefined is converted to false)
 	 */
-	_htmlHandlerHelper: function(k_listener) {
-		return (true === k_listener.call(this));
+	_htmlHandlerHelper: function() {
+		var listener = Array.prototype.pop.call(arguments);
+
+		return (true === listener.apply(this, arguments));
 	}, //_htmlHandlerHelper()
 
 	/**
@@ -570,6 +572,7 @@ Ext.extend(ma.Element, ma.Base, {
 		this.removeAllChildren();
 		this.ext.remove();
 		delete this._parent;
+		ma.Element._unregister(this);
 	},
 
 	/**
@@ -621,6 +624,7 @@ Ext.extend(ma.Element, ma.Base, {
 
 			child = this.getChildByIndex(0); //go to next child
 		} //while (for each child)
+		this.innerHTML = ''; //in some browsers empty spaces or new-line characters may remain
 	}, //removeAll()
 
 	/**
@@ -970,6 +974,17 @@ Ext.extend(ma.Element, ma.Base, {
 	 */
 	hasClass: function(cssClass) {
 		return this.ext.hasClass(cssClass);
+	},
+
+	/**
+	 * returns list of this element's children matching the query
+	 * useful in combination with callOnElements()
+	 *
+	 * @param  [String] CSS query (e.g. "#id", ".className", "tagName", "tagName#id.className", etc.)
+	 * @return [Array] list of Elements
+	 */
+	find: function(query) {
+		return ma.Element.find('#' + this.id + ' ' + query);
 	}
 
 }); //extend(ma.Element)
@@ -997,6 +1012,10 @@ Ext.apply(ma.Element, {
 		ma.Element._cache[element.id] = element;
 	},
 
+	_unregister: function(element) {
+		delete ma.Element._cache[element.id];
+	},
+
 	/**
 	 * return element with given ID
 	 *
@@ -1018,6 +1037,28 @@ Ext.apply(ma.Element, {
 				return null;
 			}
 		}
+	},
+
+	/**
+	 * returns list of elements matching the query
+	 * useful in combination with callOnElements()
+	 *
+	 * @param  [String] CSS query (e.g. "#id", ".className", "tagName", "tagName#id.className", etc.)
+	 * @return [Array] list of Elements
+	 */
+	find: function(query) {
+		var
+			domElements,
+			i, cnt,
+			maElements = [];
+
+		domElements = Ext.query(query);
+
+		for (i = 0, cnt = domElements.length; i < cnt; i++) {
+			maElements.push(new ma.Element(domElements[i]));
+		}
+
+		return maElements;
 	},
 
 	/**
