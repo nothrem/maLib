@@ -58,6 +58,26 @@ String.prototype.lengthInBytes = function(){
 	return lengthInBytes;
 }; //String.prototype.lengthInBytes()
 
+/**
+ * Replaces new-line characters (\r, \n) with HTML tag (BR)
+ *
+ * @param  {Boolean} (optional, default: true) if false will work oposite (e.g. change BR to with new-line character \n)
+ * @return {String] changed text
+ */
+String.prototype.encodeBr = (function() {
+	/**
+	 * CLOSURE
+	 */
+	var
+		html = new RegExp('<br( )?(\/)?>', 'gi'),
+		ascii = new RegExp('(\n)|(\r)|(\r\n)', 'gi');
+
+	return function(decode) {
+		return (false === decode)
+			? this.replace(html, '\n')
+			: this.replace(ascii, '<br/>');
+	};
+})();
 
 /**
  * calls method repeately until stopped; use with caution as it may consume CPU and Memory
@@ -127,7 +147,7 @@ Function.prototype.loop = function(interval, scope, params, startNow) {
 }; //loop()
 
 /**
- * Sets scope for the method when called; alternative for Ext.Function.createDelegate (where3rd param is always True)
+ * Sets scope for the method when called; alternative for Ext.Function.createDelegate (where 3rd param is always True)
  *
  * @param  [Object] (required) scope for the method
  * @param  [Array, Mixed] (optional, default: none) params for the method; these are always added after the ones set by caller
@@ -155,7 +175,7 @@ Function.prototype.setScope = function(scope, params) {
 Math.half = function(number, roundUp) {
 	var result = number / 2;
 
-	if (true === true) {
+	if (true === roundUp) {
 		return Math.ceil(result);
 	}
 	else {

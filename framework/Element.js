@@ -30,9 +30,11 @@
  *               [Object] configuration
  *                    .id          [String] (optional, default: 'element_' + index) id of the element
  *                    .tagName     [String] (optional, default: 'div') type of the element (e.g. div, p, ul, table, etc.)
+ *                    .legend      [String] (optional, default: none) adds element LEGEND into element's children; relevant only for FIELDSET element
  *                    .innerHTML   [String] (optional) content of the element in HTML (alias .content can be used)
  *                    .children    [Array]  (optional) child nodes (see ma.Element.add()) for this element (alias .items can be used); note that setting both innerHTML and children may have unforseen consequences
  *                                            if children is string ' ' (space) then <br> element is created, while '-' creates <hr>
+ *                          .label       [String] (optional) if defined, element '<label>' will be added before the element itself (can be also used in add() and insert() methods); element must have defined id
  *                    .childrenTagName [String] (optional, default: 'div') type of the element of the children if not specified otherwise (alias .itemsTagName can be used)
  *                    .listeners   [Object] (optional) list of event listeners where key is event name and value is [Function] or [Array of Functions] (alias .on can be used)
  *
@@ -71,8 +73,8 @@ ma.Element = function(domElement){
 	if (is(domElement, 'empty')) {
 		ma.console.errorAt('Undefined element.', this._fullName, 'constructor');
 	}
-	if (window === domElement) {
-		ma.console.errorAt('Cannot wrap "window" object.', this._fullName, 'constructor');
+	if (window === domElement || document === domElement) {
+		ma.console.errorAt('Cannot wrap "window" and "document" objects.', this._fullName, 'constructor');
 	}
 	//if domElement is in fact a ma.Element already, return it (used in some functions for parameter)
 	if (is(domElement, ma.Element)) {
@@ -130,6 +132,22 @@ ma.Element = function(domElement){
 			children.defaultTagName = config.childrenTagName || config.itemsTagName;
 			delete config.childrenTagName;
 			delete config.itemsTagName;
+		}
+
+		if (config.legend) {
+			if ('FIELDSET' !== config.tagName.toUpperCase) {
+				ma.console.warn('Cannot create LEGEND for non-fieldset element.', this._fullName);
+			}
+			else {
+				if (!children) {
+					children = [];
+				}
+				children.unshift({ //place as first element
+					tagName: 'legend',
+					innerHTML: config.legend
+				});
+			}
+			delete config.legend;
 		}
 
 		//convert content to innerHTML
@@ -381,6 +399,11 @@ Ext.extend(ma.Element, ma.Base, {
 				cfg = { tagName: 'hr' };
 			}
 			cfg.tagName = cfg.tagName || defaultTagName;
+
+			if (cfg.id && cfg.label) {
+				this.add({ id: cfg.id + '_label', tagName: 'label', 'for': cfg.id, innerHTML: cfg.label}, insertBefore);
+			}
+
 			newEl = new ma.Element(cfg);
 			if (insertBefore) {
 				if (ma.Element.isHtmlElement(insertBefore)) {
@@ -495,7 +518,7 @@ Ext.extend(ma.Element, ma.Base, {
 				if (parent.id === this.id) { //parent of found element is this element
 					return el;
 				}
-				parent = parent.getParent; //go to next level
+				parent = parent.getParent(); //go to next level
 			} //while (infinite loop)
 		}
 
@@ -664,7 +687,17 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [Boolean] True if element is hidden (display='none')
 	 */
 	isHidden: function() {
-		return !this.ext.isVisible;
+		return !this.ext.isVisible();
+	}, //isHidden()
+
+	/**
+	 * returns true if element is visible
+	 *
+	 * @param  [void]
+	 * @return [Boolean] True if element is hidden (display='none')
+	 */
+	isVisible: function() {
+		return this.ext.isVisible();
 	}, //isHidden()
 
 	/**
@@ -895,6 +928,9 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [Mixed] value of 'value' property of the HTML element
 	 */
 	getValue: function() {
+		if ('INPUT' === this.tagName && 'checkbox' === this.dom.type) {
+			return (this.dom.checked ? true : false);
+		}
 		if (undefined !== this.dom.value) {
 			return this.dom.value;
 		}
@@ -908,8 +944,13 @@ Ext.extend(ma.Element, ma.Base, {
 	 * @return [void]
 	 */
 	setValue: function(value) {
+		if ('INPUT' === this.tagName && 'checkbox' === this.dom.type) {
+			this.dom.checked = (value ? 'checked' : '');
+			return;
+		}
 		if (undefined !== this.dom.value) {
 			this.dom.value = value;
+			return;
 		}
 		this.dom.innerHTML = value;
 
@@ -985,6 +1026,65 @@ Ext.extend(ma.Element, ma.Base, {
 	 */
 	find: function(query) {
 		return ma.Element.find('#' + this.id + ' ' + query);
+	},
+
+	/**
+	 * sets focus to this Element
+	 */
+	focus: function() {
+		this.ext.focus();
+	},
+
+	/**
+	 * disables this element (note that this works only to elements like Buttons and Inputs)
+	 *
+	 * @param {Boolean} (optional, default: true) True = disable, False = enable
+	 */
+	disable: function(disable) {
+		this.dom.disabled = (false !== disable);
+	},
+
+	/**
+	 * enables this element (presuming it's of kind that can be disabled and is disabled)
+	 *
+	 * @param {Boolean} (optional, default: true) True = enable, False = disable
+	 */
+	enable: function(enable) {
+		this.disable(false === enable);
+	},
+
+	/**
+	 * check that the element is disabled
+	 *
+	 * @return {Boolean} true when the element is disabled
+	 */
+	isDisabled: function() {
+		return (this.dom.disabled);
+	},
+
+	/**
+	 * check that the element is enabled
+	 *
+	 * @return {Boolean} true when the element is enabled
+	 */
+	isEnabled: function() {
+		return (!this.isDisabled());
+	},
+
+	/**
+	 * simulates click on the Element, presuming it's enabled (note that this works only to elements like buttons)
+	 */
+	click: function() {
+		if (this.isDisabled()) {
+			return;
+		}
+
+		if (ma.util.is(this.dom.click, Function)) {
+			this.dom.click();
+		}
+		else {
+			this.notify('click');
+		}
 	}
 
 }); //extend(ma.Element)
