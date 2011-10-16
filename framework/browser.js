@@ -47,10 +47,6 @@ ma._Browser = function() {
 
 	this._class.superclass.constructor.apply(this, arguments);
 
-	this.addEvents('resize');
-
-	//add handlers for events
-
 	//instance properties
 	version = this._class._detect();
 
@@ -62,6 +58,7 @@ ma._Browser = function() {
 	}); //merge properties
 
 	this.body = new ma.Element(Ext.getBody().dom);
+	this._document = new Ext.Element(window.document);
 };
 
 ma.extend('ma._Browser', ma.Base, {
@@ -273,14 +270,6 @@ ma.extend('ma._Browser', ma.Base, {
 	},
 
 	/**
-	 * @private
-	 * handler for window resizing
-	 */
-	_onResize: function() {
-		this.notify(ma._Browser.events.resize);
-	},
-
-	/**
 	 * masks or unmasks whole window
 	 *
 	 * @param {Boolean} show or hide the mask
@@ -288,6 +277,65 @@ ma.extend('ma._Browser', ma.Base, {
 	 */
 	mask: function(showMask, text) {
 		this.body.mask.apply(this.body, arguments);
+	},
+
+	/**
+	 * moves current window view to given coordinates
+	 *
+	 * @param {[Object]} config
+	 *             .x   {[Number]} move to given X (horizontal) coordinate
+	 *             .byX {[Number]} move by given delta horizontaly from current position
+	 *             .y   {[Number]} move to given Y (vertical) coordinate
+	 *             .byY {[Number]} move by given delta vertically from current position
+	 *            'top' {String} when passed in instead of object it scrolls to body top
+	 *            'bottom' {String} when passed in instead of object it scrolls to the end of the body
+	 * @return {void}
+	 */
+	scroll: function(config) {
+		var
+			x,y,posX,posY,timer,
+			is = ma.util.is,
+			currentX = window.scrollX,
+			currentY = window.scrollY;
+
+		if (is(config, String) && ('top' === config || 'bottom' === config)) {
+			x = 0;
+			if ('top' === config) {
+				y = 0;
+			}
+			else {
+				y = ma.browser.body.ext.getHeight();
+			}
+		}
+		else if (is(config, Object)) {
+			if (is(config.byX, undefined)) {
+				x = config.x;
+			}
+			else {
+				x = currentX + config.byX;
+			}
+			if (is(config.byY, undefined)) {
+				y = config.y;
+			}
+			else {
+				y = currentY + config.byY;
+			}
+		}
+
+		if (is(x, undefined)) {
+			x = currentX;
+		}
+		if (is(y, undefined)) {
+			y = currentY;
+		}
+
+		if (config.animate) {
+			ma.console.warn('Scrolling animation not implemented.');
+			window.scrollTo(x, y);
+		}
+		else {
+			window.scrollTo(x, y);
+		}
 	},
 
 	/**
@@ -401,7 +449,95 @@ ma.extend('ma._Browser', ma.Base, {
 		}
 
 		return value;
-	}
+	},
+
+	/**
+	 * @private
+	 * sets event handlers for browsers events (window, document, etc.)
+	 *
+	 * @param  [Function/Array] see ma.Element.constructor()::listeners
+	 * @return [void]
+	 */
+	_setEvents: function(listeners) {
+		var
+			htmlEvents = {
+				'keyDown': { handler: 'onkeydown', event: 'keydown', element: 'document' },
+				'keyUp': { handler: 'onkeyup', event: 'keyup', element: 'document' },
+				'keyPress': { handler: 'onkeypress', event: 'keypress', element: 'document' },
+				'resize': { handler: 'onresize', event: 'resize', element: 'window' }
+			},
+			i, cnt, event;
+
+		for (i in htmlEvents) {
+			event = htmlEvents[i];
+			this.addEvents(i);
+
+			switch (event.element) {
+				case 'document':
+					this._document.on(event.event, this._htmlEventHandler.setScope(this));
+					break;
+				case 'window':
+					window[event.handler] = this._htmlWindowEventHandler.createDelegate(this, [i]);
+					break;
+				case 'body':
+					this.body.ext.on(event.event, this._htmlEventHandler.setScope(this));
+					break;
+				default:
+					ma.console.errorAt('Cannot bind event ' + i + ' on element ' + event.element, this._fullName, '_setEvents');
+			}
+
+			if (!ma._Browser.htmlEvents) {
+				ma._Browser.htmlEvents = {};
+			}
+			ma._Browser.htmlEvents[i] = event;
+		}
+	}, //_setEvents()
+
+	/**
+	 * @private
+	 * universal HTML event handler for events created by Window element
+	 *
+	 * @param  [BrowserEvent]
+	 * @return [Boolean] false if event should be canceled
+	 */
+	_htmlWindowEventHandler: function(eventName) {
+		this.notify(eventName);
+	},
+
+	/**
+	 * @private
+	 * universal HTML event handler that converts BrowserEvent object into more suitable one
+	 *
+	 * @param  [BrowserEvent]
+	 * @return [Boolean] false if event should be canceled
+	 */
+	_htmlEventHandler: function(extEvent) {
+		var
+			eventName,
+			options,
+			result = false;
+
+		options = ma.util.getEvent(extEvent);
+
+		//get event name
+		eventName = options.event;
+
+		if (!eventName) {
+			return; //this is not known event or is not called on valid element
+		}
+
+		try {
+			result = this.notify(eventName, options);
+		} catch (e) { //stops event if its handler caused error
+			extEvent.stopEvent();
+			ma.console.warn('Handler for event %s::%s has crashed, event was stopped.', this.id, eventName);
+			throw e; //throw error again to actually let it go (here we only care about stopping the event)
+		}
+		if (!result) {
+			extEvent.stopEvent();
+		}
+	} //_htmlEventHandler()
+
 
 }); //extend(ma._Browser)
 
@@ -410,7 +546,7 @@ ma.extend('ma._Browser', ma.Base, {
  */
 ma._Browser._init = function(){
 	ma.browser = new ma._Browser();
-	window.onresize = ma.browser._onResize.setScope(ma.browser);
+	ma.browser._setEvents();
 };
 
 ma.registerInitFunction(ma._Browser._init);

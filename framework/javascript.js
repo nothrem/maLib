@@ -24,7 +24,7 @@
  * Code in this file extends JavaScript itself
  *
  * There is one important rule: NEVER EVER EXTEND THE BASIC 'OBJECT'
- * (e.g. object.prototype.something = '...' if strictly forbidden!!!)
+ * (e.g. object.prototype.something = '...' is strictly forbidden!!!)
  */
 
 /**
@@ -181,4 +181,23 @@ Math.half = function(number, roundUp) {
 	else {
 		return Math.floor(result);
 	}
+};
+
+/**
+ * sorts this array randomly
+ * code taken from http://javascript.about.com/library/blshuffle.htm
+ *
+ * @param  {void}
+ * @return {Array}
+ */
+Array.prototype.randomize = function() {
+	var result = [];
+
+	while (this.length) {
+		result.push(this.splice(Math.random() * this.length, 1)[0]);
+	}
+	while (result.length) {
+		this.push(result.pop());
+	}
+	return this;
 };

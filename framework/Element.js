@@ -23,7 +23,7 @@
  */
 
 /**
- * @constructor
+ * @class
  * creates new DOM element wrapper object
  *
  * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
@@ -37,6 +37,7 @@
  *                          .label       [String] (optional) if defined, element '<label>' will be added before the element itself (can be also used in add() and insert() methods); element must have defined id
  *                    .childrenTagName [String] (optional, default: 'div') type of the element of the children if not specified otherwise (alias .itemsTagName can be used)
  *                    .listeners   [Object] (optional) list of event listeners where key is event name and value is [Function] or [Array of Functions] (alias .on can be used)
+ *                    .params      [Object] optional params that can be later read by element.getParam()
  *
  *
  * @return [Object] new element wrapper, existing wrapper of the element or null on error
@@ -135,7 +136,7 @@ ma.Element = function(domElement){
 		}
 
 		if (config.legend) {
-			if ('FIELDSET' !== config.tagName.toUpperCase) {
+			if ('FIELDSET' !== config.tagName.toUpperCase()) {
 				ma.console.warn('Cannot create LEGEND for non-fieldset element.', this._fullName);
 			}
 			else {
@@ -203,7 +204,7 @@ ma.Element = function(domElement){
 
 }; //ma.Element
 
-Ext.extend(ma.Element, ma.Base, {
+ma.extend(ma.Element, ma.Base, {
 /**
  * @scope ma.Element
  */
@@ -312,7 +313,7 @@ Ext.extend(ma.Element, ma.Base, {
 		var
 			eventName,
 			options,
-			result;
+			result = false;
 
 		options = ma.util.getEvent(extEvent);
 
@@ -328,6 +329,7 @@ Ext.extend(ma.Element, ma.Base, {
 		} catch (e) { //stops event if its handler caused error
 			extEvent.stopEvent();
 			ma.console.warn('Handler for event %s::%s has crashed, event was stopped.', this.id, eventName);
+			ma.console.log(e);
 			throw e; //throw error again to actually let it go (here we only care about stopping the event)
 		}
 		if (!result) {
@@ -1085,7 +1087,27 @@ Ext.extend(ma.Element, ma.Base, {
 		else {
 			this.notify('click');
 		}
+	},
+
+	/**
+	 * Scrolls current window view to the coordinates of this element
+	 *
+	 * @param {[Boolean = true]} onlyVertically when false, view will not change its X coordinates
+	 * @return {void}
+	 */
+	scrollTo: function(onlyVertically) {
+		var
+			x = (false === onlyVertically ? this.ext.getX() : undefined),
+			y = this.ext.getY();
+
+		if (ma.browser && ma.browser.scroll) {
+			ma.browser.scroll({x:x, y:y, animate: true});
+		}
+		else {
+			window.scrollTo(x,y);
+		}
 	}
+
 
 }); //extend(ma.Element)
 

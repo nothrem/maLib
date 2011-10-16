@@ -59,7 +59,7 @@ ma.Observable = function(){
 	return null; //abstract class
 }; //ma.Observable
 
-Ext.extend(ma.Observable, Ext.util.Observable, {
+ma.extend(ma.Observable, Ext.util.Observable, {
 	/**
 	 * @scope ma.Observable
 	 */

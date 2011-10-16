@@ -79,7 +79,7 @@ ma._Ajax = function() {
 
 };
 
-Ext.extend(ma._Ajax, ma.Base, {
+ma.extend(ma._Ajax, ma.Base, {
 /**
  * @scope ma.ajax
  */

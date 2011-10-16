@@ -42,10 +42,15 @@ ma.console = {
 	 *
 	 * @see printf function from C++
 	 */
-	_printf: window.printf || function(message) {
+	_printf: function(message) {
+		if ('string' === typeof message) {
+			return (window.printf || ma.console.printf).apply(this, arguments);
+		}
 		return message;
 	}, //_printf()
-
+	printf: function(message) {
+		return message;
+	},
 	/**
 	 * Returns number formated as two digits
 	 *

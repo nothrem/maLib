@@ -92,7 +92,7 @@ ma.Cookie = function(name, age, path, domain, secure) {
 	});
 };
 
-Ext.extend(ma.Cookie, ma.Base, {
+ma.extend(ma.Cookie, ma.Base, {
 /**
  * @scope ma.Cookie
  */

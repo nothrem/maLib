@@ -63,7 +63,7 @@ ma.initAjax = function(url, callback) {
 
 ma.util.merge(ma.Element.prototype, {
 	/**
-	 * Allows to call may methods on Element
+	 * Allows to call many methods on Element
 	 *
 	 * @param  [Array] list of methods and its params
 	 *           <item>  [String] name of method to call (e.g. 'hide' will hide the Element)

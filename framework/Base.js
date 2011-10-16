@@ -36,6 +36,7 @@ ma.Base = function() {
 	ma.Base.superclass.constructor.apply(this, arguments);
 	this.isReady = true;
 	this._isInstance = true;
+	this._isClass = false;
 
 };
 
@@ -44,6 +45,7 @@ Ext.extend(ma.Base, ma.Observable, {
 	 * @scope ma.Base
 	 */
 	// static properties
+	_isClass: true,
 	_isInstance: false,
 	_className: 'Base',
 	_fullName: 'ma.Base',
@@ -68,3 +70,6 @@ Ext.extend(ma.Base, ma.Observable, {
 		return ma.util.clone(this, values);
 	}
 });
+
+ma.Base._isClass = true;
+ma.Base._isInstance = false;

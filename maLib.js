@@ -22,8 +22,13 @@
 
 /**
  * MA library's main scope
+ * @class
  */
 ma = {
+	/**
+	 * @class ma
+	 */
+
 	/**
 	 * load all framework files
 	 *
@@ -117,8 +122,8 @@ ma = {
 	/**
 	 * return true when library is initialized
 	 *
-	 * @param  [void]
-	 * @return [Boolean]
+	 * @param  {void}
+	 * @return {Boolean}
 	 */
 	isReady: function() {
 		return (true === ma._isReady) && (true === Ext.isReady);
@@ -151,6 +156,9 @@ ma = {
 
 		var
 			scope = baseScope || window,
+			/**
+			 * object of path
+			 */
 			path = namespace.split('.'),
 			length = path.length,
 			i, part,
@@ -186,21 +194,22 @@ ma = {
 			path.node = undefined;
 		}
 
-		path.call = function() {
-			if (undefined === this.errorIndex && ma.util.is(this.node, Function)) {
-				this.node.apply(this.scope, arguments);
-			}
-		};
+		path.call = ma._getNamespaceCall;
 
 		return path;
+	},
+	_getNamespaceCall: function() {
+		if (undefined === this.errorIndex && ma.util.is(this.node, Function)) {
+			this.node.apply(this.scope, arguments);
+		}
 	},
 
 	/**
 	 * @private
 	 * tests if given namespace if defined
 	 *
-	 * @param  namespace [String] path to test (e.g. 'window.document.body' to test existance of body element)
-	 * @param  ignoreNull[String] (optional, default: false) true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
+	 * @param  [String] path to test (e.g. 'window.document.body' to test existance of body element)
+	 * @param  [String] (optional, default: false) true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
 	 * @return [String] name of namespace part that does not exist, empty string on success
 	 * @see ma.isDefined()
 	 */
@@ -231,11 +240,11 @@ ma = {
 	/**
 	 * tests if given namespace if defined
 	 *
-	 * @param  [String] path to test (e.g. 'window.document.body' to test existance of body element)
-	 * @param  [String] true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
-	 * @return [Boolean] True if the namespace is already defined
+	 * @param {String} path path to test (e.g. 'window.document.body' to test existance of body element)
+	 * @param {Boolean} [ignoreNull=true] true to consider NULL value as same as undefined, false means NULL is valid value and means object is defined
+	 * @return {Boolean} True if the namespace is already defined
 	 *
-	 * notes:
+	 * @note
 	 * - path can be either relative to current scope or absolute by starting with "window.", "ma." or "Ext."
 	 * - you can test any value that is defined (e.g. object (for NULL see second param), function, array, string (incl. empty), boolean (both True and False), etc.)
 	 * - for debug purpose you can use private method _isDefined() that returns name of namespace that is undefined
@@ -359,7 +368,7 @@ ma = {
 			regex = /src=\"(.*)\/maLib\.js(\?debug)?\"/g,
 			path = regex.exec(head.innerHTML);
 
-		if (path && path [2]) {
+		if (path && path[2]) {
 			ma._isDebug = true;
 		}
 
@@ -411,6 +420,9 @@ ma = {
 			throw new Error('Extend: Invalid or undefined class for extension');
 		}
 
+		extendClass._isInstance = false;
+		extendClass._isClass = true;
+
 		return Ext.extend(extendClass, superClass, methods);
 	}
 
@@ -425,6 +437,12 @@ if (!window.HTMLElement) {
 
 ma._loadFiles(ma._getMyPath());
 
+if (false) {
+	/**
+	 * Browser window object
+	 */
+	window = {};
+}
 /**
  * Initialization after page is loaded
  * window.onload is alias for body.onload; its just available before body is created ;)
