@@ -26,6 +26,15 @@
  *
  * @event resize          fires when browser window is resized
  *           <param>   [void]      no params for this event; use ma.util.getWindowInfo() to get current window size
+ * @event keyDown         fires when user pressed a keyboard button
+ *           <param>   [event]     event info about pressed key
+ * @event keyUp           fires when user releases a keyboard button
+ *           <param>   [event]     event info about pressed key
+ * @event keyPress         fires after user pressed and released a keyboard button
+ *           <param>   [event]     event info about pressed key
+ * @event changeState      fires when browser changes its state (see ma.browser.setState)
+ *           <param>   [String]    name of the state (undefined if all states were removed)
+ *           <param>   [String]    new value of the state (undefined if no value)
  *
  *
  * @example How to use
@@ -400,6 +409,7 @@ ma.extend('ma._Browser', ma.Base, {
 
 		if (false === state) { //remove any state in URL
 			this._setState([]);
+			this.notify('changeState', undefined, undefined);
 			return;
 		}
 
@@ -422,6 +432,8 @@ ma.extend('ma._Browser', ma.Base, {
 				states.push([state, value]);
 			} //else value is false which means "delete" but is does not exist
 		}
+
+		this.notify('changeState', state, value);
 
 		this._setState(states);
 	},
@@ -464,7 +476,8 @@ ma.extend('ma._Browser', ma.Base, {
 				'keyDown': { handler: 'onkeydown', event: 'keydown', element: 'document' },
 				'keyUp': { handler: 'onkeyup', event: 'keyup', element: 'document' },
 				'keyPress': { handler: 'onkeypress', event: 'keypress', element: 'document' },
-				'resize': { handler: 'onresize', event: 'resize', element: 'window' }
+				'resize': { handler: 'onresize', event: 'resize', element: 'window' },
+				'changeState': { element: 'none' }
 			},
 			i, cnt, event;
 
@@ -481,6 +494,9 @@ ma.extend('ma._Browser', ma.Base, {
 					break;
 				case 'body':
 					this.body.ext.on(event.event, this._htmlEventHandler.setScope(this));
+					break;
+				case 'none':
+					//nothing, just create event (will be fired elsewhere manually)
 					break;
 				default:
 					ma.console.errorAt('Cannot bind event ' + i + ' on element ' + event.element, this._fullName, '_setEvents');
