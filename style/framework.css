@@ -1,0 +1,42 @@
+#documentBody {
+	overflow: hidden;
+}
+
+#browserInfo {
+  font-style: italic;
+  color: gray;
+  text-align: center;
+  font-size: 16px;
+  background: #fff;
+}
+
+#browserInfo p {
+	padding: 0 2em;
+	margin: 0 0 1ex;
+}
+
+#browserInfo.out {
+	border-top: 1px solid #000;
+}
+
+#browserInfo:hover p {
+	text-decoration: underline;
+	font-weight: bold;
+}
+#browserInfo.out:hover p {
+	text-decoration: none;
+	font-weight: normal;
+}
+#pageMask {
+	filter:alpha(opacity=75);
+	-moz-opacity:.75;
+	opacity:.75;
+}
+
+#pageMaskBox {
+	filter:alpha(opacity=100);
+	-moz-opacity:1;
+	opacity:1;
+	border: 3px solid black;
+	padding: 1em;
+}
