@@ -108,7 +108,7 @@ class jsonReader extends dataReader {
 
 		if (is_object($data)) {
 			$data->$key = $value;
-		} //else nothing, cannot works with non-object store
+		} //else nothing, cannot work with non-object store
 	}
 
 	public function remove($key) {

@@ -94,7 +94,10 @@ abstract class dataReader {
 		return $this->getUniqueId($prefix, 0);
 	}
 
-	private function getUniqueId($id, $i = 0) {
+	private function getUniqueId($id = 'item', $i = 0) {
+		if (999 < $i) {
+			api::quit('Cannot generate new id for ' . $id);
+		}
 		$newId = $id . $i;
 		if ($this->exists($newId)) {
 			return $this->getUniqueId($id, $i++);

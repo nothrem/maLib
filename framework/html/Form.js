@@ -38,6 +38,8 @@
 
  * @event HTMLevents      fires any time some HTML event occurs; events are click, doubleClick, mouseMove, keyDown, etc.
  *           <param>   [Event]      see ma.util.getEvent()
+ * @event submit          fires when user clicks on a button created by type 'submit
+ *           <param>   [String]     if of a button that was clicked on
  *
  * @example Possibilities of ma.Element.Form objects
 		<code>
@@ -54,6 +56,10 @@ ma.Element.Form = function(domElement){
 	this.items = [];
 
 	ma.Element.Form.superclass.constructor.apply(this, arguments);
+
+	this.addEvents({
+		submit: true
+	});
 
 }; //ma.Element
 
@@ -111,14 +117,14 @@ ma.extend('ma.Element.Form', ma.Element, {
 			else if ('-' === cfg) {
 				cfg = { tagName: 'hr' };
 			}
-			if (cfg.type) {
+			if (cfg.tagName) { //non-Form Element
+				newEl = new ma.Element(cfg);
+			}
+			else {
 				cfg.formIdPrefix = this.id + '_';
 				newEl = new ma.Element.FormItem(cfg);
 				this.items.push(newEl);
 				this.items[cfg.id] = newEl;
-			}
-			else {
-				newEl = new ma.Element(cfg);
 			}
 			if (insertBefore) {
 				if (ma.Element.isHtmlElement(insertBefore)) {
@@ -132,7 +138,7 @@ ma.extend('ma.Element.Form', ma.Element, {
 				this.ext.appendChild(newEl.ext);
 			}
 			elements.push(newEl);
-			newEl.parent = this; //backward reference
+			newEl.form = this; //backward reference
 		}
 
 		//return value
@@ -174,6 +180,21 @@ ma.extend('ma.Element.Form', ma.Element, {
 				}
 			}
 		}
+	},
+
+	isValid: function() {
+		var
+			items = this.items,
+			item,
+			i, cnt;
+
+		for (i = 0, cnt = items.length; i < cnt; i++) {
+			if (!items[i].isValid()) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 }); //extend(ma.Element.Form)
@@ -212,13 +233,6 @@ ma.Element.FormItem = function(config){
 		itemConfig = {};
 
 	switch (config.type) {
-		default: //'text'
-			itemConfig = {
-				tagName: 'input',
-				type: 'text',
-				value: config.value
-			};
-			break;
 		case 'checkbox':
 			itemConfig = {
 				tagName: 'input',
@@ -243,6 +257,23 @@ ma.Element.FormItem = function(config){
 				})()
 			};
 			break;
+		case 'submit':
+			itemConfig = {
+				tagName: 'button',
+				innerHTML: config.caption,
+				on: {
+					click: this._submit
+				}
+			};
+			config.caption = '';
+			break;
+		default: //'text'
+			itemConfig = {
+				tagName: 'input',
+				type: 'text',
+				value: config.value || ''
+			};
+			break;
 	}
 
 	ma.util.merge(itemConfig, {
@@ -252,7 +283,7 @@ ma.Element.FormItem = function(config){
 			position: 'absolute',
 			left: config.itemAlign || '100px'
 		}
-	})
+	});
 
 
 	elConfig = {
@@ -263,7 +294,8 @@ ma.Element.FormItem = function(config){
 			position: 'relative'
 		},
 		params: {
-			itemId: id
+			itemId: config.id,
+			validate: config.validate
 		},
 		items: [
 			{
@@ -283,6 +315,7 @@ ma.Element.FormItem = function(config){
 	ma.Element.FormItem.superclass.constructor.apply(this, arguments);
 
 	this._item = this.getChild(idPrefix + 'item');
+	this._item._formItem = this;
 	this.type = this._item.dom.type;
 
 }; //ma.Element
@@ -305,12 +338,44 @@ ma.extend('ma.Element.FormItem', ma.Element, {
 		return (tagNameOrType.toLowerCase() === this.type.toLowerCase());
 	}, //is()
 
-	setValue: function(value) {
-		if (this.is('text')) {
-			this._item.dom.value = value;
+	getValue: function() {
+		return this._item.getValue.apply(this._item, arguments);
+	},
+
+	setValue: function() {
+		return this._item.setValue.apply(this._item, arguments);
+	},
+
+	isValid: function() {
+		var
+			is = ma.util.is,
+			validate = this.getParam('validate'),
+			value = this.getValue(),
+			i, cnt;
+
+		if (is(validate, String)) {
+			validate = [ validate ];
 		}
-		else if (this.is('checkbox')) {
-			this._item.dom.checked = value;
+
+		if (is(validate, Array)) {
+			for (i = 0, cnt = validate.length; i < cnt; i++) {
+				switch (validate[i]) {
+					case 'require':
+						if (is(value, 'empty')) {
+							return false;
+						}
+				}
+			}
 		}
+
+		return true;
+	},
+
+	_submit: function() {
+		var
+			item = this._formItem,
+			form = item.form;
+
+		form.notify('submit', item);
 	}
 });
