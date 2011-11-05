@@ -201,3 +201,19 @@ Array.prototype.randomize = function() {
 	}
 	return this;
 };
+
+Array.prototype.pushIf = function(item) {
+	if (0 > this.indexOf(item)) {
+		this.push(item);
+	}
+};
+
+if (!Array.prototype.forEach) {
+	Array.prototype.forEach = function(fce) {
+		var i, cnt;
+
+		for (i = 0, cnt = this.length; i <= cnt; i++) {
+			fce.call(this, this[i]);
+		}
+	};
+}

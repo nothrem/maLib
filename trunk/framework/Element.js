@@ -419,7 +419,7 @@ ma.extend(ma.Element, ma.Base, {
 				this.ext.appendChild(newEl.ext);
 			}
 			elements.push(newEl);
-			newEl.parent = this; //backward reference
+			newEl._parent = this; //backward reference
 		}
 
 		//return value
@@ -1107,8 +1107,6 @@ ma.extend(ma.Element, ma.Base, {
 			window.scrollTo(x,y);
 		}
 	}
-
-
 }); //extend(ma.Element)
 
 /**

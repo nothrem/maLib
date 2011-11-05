@@ -68,6 +68,20 @@ Ext.extend(ma.Base, ma.Observable, {
 	 */
 	clone: function(values) {
 		return ma.util.clone(this, values);
+	},
+
+	/**
+	 * Calls method on the instance; the returns reference to the instance to allow call another chain
+	 *
+	 * @param  {String} method
+	 * @param  {Array} params
+	 */
+	chain: function(method, params) {
+		if (!ma.util.is(params, Array)) {
+			params = [ params ];
+		}
+		this[method](params);
+		return this;
 	}
 });
 
