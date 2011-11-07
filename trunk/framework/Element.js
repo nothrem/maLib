@@ -145,7 +145,7 @@ ma.Element = function(domElement){
 				}
 				children.unshift({ //place as first element
 					tagName: 'legend',
-					innerHTML: config.legend
+					innerHTML: '&nbsp;' + config.legend + '&nbsp;'
 				});
 			}
 			delete config.legend;

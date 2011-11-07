@@ -68,6 +68,10 @@ ma._Browser = function() {
 
 	this.body = new ma.Element(Ext.getBody().dom);
 	this._document = new Ext.Element(window.document);
+
+	this.body.addClass('br-' + this._name);
+	this.body.addClass('br-ver-' + this._version);
+	this.body.addClass('os-' + this._os);
 };
 
 ma.extend('ma._Browser', ma.Base, {
@@ -133,8 +137,7 @@ ma.extend('ma._Browser', ma.Base, {
 	},
 	ff4: {
 		name:      'Firefox',
-		minVersion: 4,
-		maxVersion: 5
+		minVersion: 4
 	},
 	safari: {
 		name:      'Safari',
@@ -185,6 +188,9 @@ ma.extend('ma._Browser', ma.Base, {
 	},
 	iphone: {
 		os:      'iPhone/iPod'
+	},
+	ipad: {
+		os:      'iPad'
 	},
 
 	/**
