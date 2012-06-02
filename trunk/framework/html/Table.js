@@ -35,7 +35,7 @@
  *
 
  * @event HTMLevents      fires any time some HTML event occurs; events are click, doubleClick, mouseMove, keyDown, etc.
- *           <param>   [Event]      see ma.util.getEvent()
+ *           <param>   [Event]      see ma.Observable.getEvent()
  *
  * @example Possibilities of ma.Element.Table objects
 		<code>

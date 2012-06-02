@@ -539,7 +539,7 @@ ma.extend('ma._Browser', ma.Base, {
 			options,
 			result = false;
 
-		options = ma.util.getEvent(extEvent);
+		options = this.getEvent(extEvent);
 
 		//get event name
 		eventName = options.event;

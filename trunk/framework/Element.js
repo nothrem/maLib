@@ -297,9 +297,20 @@ ma.extend(ma.Element, ma.Base, {
 	 * @return [Boolean] returns false unless function returns True (e.i. undefined is converted to false)
 	 */
 	_htmlHandlerHelper: function() {
-		var listener = Array.prototype.pop.call(arguments);
+		var
+			listener = Array.prototype.pop.call(arguments),
+			element = arguments[0].element,
+			event = arguments[0].event,
+			result;
 
-		return (true === listener.apply(this, arguments));
+		result = listener.apply(this, arguments);
+
+		//in text fields, key events must not be stopped, otherwise it would not fill in the value
+		if (element.isTextField() && -1 < ['keydown', 'keyup', 'keypress'].indexOf(event)) {
+			return (false !== result);
+		}
+
+		return (true === result);
 	}, //_htmlHandlerHelper()
 
 	/**
@@ -315,7 +326,7 @@ ma.extend(ma.Element, ma.Base, {
 			options,
 			result = false;
 
-		options = ma.util.getEvent(extEvent);
+		options = this.getEvent(extEvent);
 
 		//get event name and element wrapper
 		eventName = ma.Element.htmlEvents[options.browserEvent.type];
@@ -1106,7 +1117,20 @@ ma.extend(ma.Element, ma.Base, {
 		else {
 			window.scrollTo(x,y);
 		}
+	},
+
+	/**
+	 * returns true if the element in text input or password input
+	 *
+	 * @param {void}
+	 * @return {Boolean}
+	 */
+	isTextField: function() {
+		var dom = this.dom;
+		return ('INPUT' === this.tagName && ('text' === dom.type || 'password' === dom.type));
 	}
+
+
 }); //extend(ma.Element)
 
 /**
