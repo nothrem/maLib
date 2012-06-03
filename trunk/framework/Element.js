@@ -258,6 +258,8 @@ ma.extend(ma.Element, ma.Base, {
 			i, cnt, event;
 
 		this.addEvents('contentLoaded', 'set');
+
+		//register HTML events in Ext
 		for (i in htmlEvents) {
 			this.ext.on(htmlEvents[i].event, this._htmlEventHandler.setScope(this));
 			this.addEvents(i);
@@ -842,9 +844,10 @@ ma.extend(ma.Element, ma.Base, {
 			mask = this._mask,
 			text = mask._maskText,
 			tSize = text.getInfo(),
+			isBrowser = ('BODY' === this.tagName),
 			pos;
 
-		if ('BODY' === this.tagName) { //body may be smaller that the window, but masked should be whole window
+		if (isBrowser) { //body may be smaller that the window, but masked should be whole window
 			size = {
 				left: 0,
 				right: 0,
@@ -857,21 +860,22 @@ ma.extend(ma.Element, ma.Base, {
 
 		pos = mask.ext.getPositioning();
 		ma.util.merge(pos, {
-				position: 'fixed',
-				left:   size.left,
-				right:  size.right,
-				top:    size.top,
-				bottom: size.bottom,
+				position: (isBrowser ? 'fixed' : 'absolute'),
+				left:   size.left + 'px',
+				right:  size.right + 'px',
+				top:    size.top + 'px',
+				bottom: size.bottom + 'px',
 				'z-index': 9999
 			}
 		); //merge
 		mask.ext.setPositioning(pos);
+		mask.show(); //mask may be hidden if it was displayed over and empty element
 
 		pos = text.ext.getPositioning();
 		ma.util.merge(pos, {
 				position: 'relative',
-				left:   Math.half(size.width  - tSize.width),
-				top:    Math.half(size.height - tSize.height)
+				left:   Math.half(size.width  - tSize.width) + 'px',
+				top:    0 + 'px'
 			}
 		); //merge
 		text.ext.setPositioning(pos);
