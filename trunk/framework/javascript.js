@@ -217,3 +217,7 @@ if (!Array.prototype.forEach) {
 		}
 	};
 }
+
+Array.prototype.contains = function(item) {
+	return (-1 < this.indexOf(item));
+};
