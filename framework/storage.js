@@ -25,6 +25,7 @@
  * creates new object that represents a storage space 
  *
  * @param [String] (required) name of the storage
+ * @param [Boolean] (optional, default: false) read values from storage to get filled initial state; if false, storage will be initially empty
  *
  * @event onRead     fires after a value is read from browser
  *         <param> [ma.Storage]
@@ -33,7 +34,7 @@
  * @event onRemove   fires before a value is removed from browser
  *         <param> [ma.Storage]
  */
-ma.Storage = function(name) {
+ma.Storage = function(name, autoRead) {
 	if (false === ma.Storage._isReady) {
 		ma.console.error('LocalStorage is not supported by this browser, cannot create instance of %s.', this._fullName);
 		return null;
@@ -56,6 +57,10 @@ ma.Storage = function(name) {
 		_name: name,
 		_values: {},
 	});
+
+	if (true === autoRead) {
+		this.read();
+	}
 };
 
 ma.extend(ma.Storage, ma.Base, {
@@ -133,7 +138,7 @@ ma.extend(ma.Storage, ma.Base, {
 		// Decode and split into array
 		values = this._decode(values);
 
-		this._values = values;
+		this._values = values || {};
 
 		//fire event
 		this.notify(ma.Storage.events.onRead, this);
@@ -231,7 +236,7 @@ Ext.apply(ma.Storage, {
 			return;
 		}
 
-        var
+		var
 			json = localStorage.getItem(name),
 			value = ma.Storage.prototype._decode(json);
 
