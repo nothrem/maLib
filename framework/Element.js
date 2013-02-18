@@ -30,11 +30,12 @@
  *               [Object] configuration
  *                    .id          [String] (optional, default: 'element_' + index) id of the element
  *                    .tagName     [String] (optional, default: 'div') type of the element (e.g. div, p, ul, table, etc.)
+ *                    .type        [String] (optional) type of input element (e.g. password, checkbox, etc.); if defined, tagName will be set to 'input' automatically
  *                    .legend      [String] (optional, default: none) adds element LEGEND into element's children; relevant only for FIELDSET element
  *                    .innerHTML   [String] (optional) content of the element in HTML (alias .content can be used)
  *                    .children    [Array]  (optional) child nodes (see ma.Element.add()) for this element (alias .items can be used); note that setting both innerHTML and children may have unforseen consequences
  *                                            if children is string ' ' (space) then <br> element is created, while '-' creates <hr>
- *                          .label       [String] (optional) if defined, element '<label>' will be added before the element itself (can be also used in add() and insert() methods); element must have defined id
+ *                          .label       [String] (optional) if defined, element '<label>' will be added before (or after in case of checkbox) the element itself (can be also used in add() and insert() methods); element must have defined id
  *                    .childrenTagName [String] (optional, default: 'div') type of the element of the children if not specified otherwise (alias .itemsTagName can be used)
  *                    .listeners   [Object] (optional) list of event listeners where key is event name and value is [Function] or [Array of Functions] (alias .on can be used)
  *                    .params      [Object] optional params that can be later read by element.getParam()
@@ -151,10 +152,20 @@ ma.Element = function(domElement){
 			delete config.legend;
 		}
 
+		if (config.tagName === 'label' && config['for']) {
+			config.htmlFor = config['for'];
+			delete config['for'];
+		}
+
 		//convert content to innerHTML
 		if (config.content) {
 			config.innerHTML = config.content;
 			delete config.content;
+		}
+
+		//handle input elements defined by type as inputs
+		if (config.type) {
+			config.tagName = 'input';
 		}
 
 		//get events
@@ -271,12 +282,12 @@ ma.extend(ma.Element, ma.Base, {
 			for (event in listeners) {
 				if (htmlEvents[event]) {
 					if (ma.util.is(listeners[event], Function)) {
-						this.on(event, this._htmlHandlerHelper.setScope(this, [listeners[event]]));
+						this.addListener(event, this._htmlHandlerHelper.setScope(this, [listeners[event]]));
 					}
 					else if (ma.util.is(listeners[event], Array)) {
 						for (i = 0, cnt = listeners[event].length; i < cnt; i++) {
 							if (ma.util.is(listeners[event][i], Function)) {
-								this.on(event, this._htmlHandlerHelper.setScope(this, [listeners[event][i]]));
+								this.addListener(event, this._htmlHandlerHelper.setScope(this, [listeners[event][i]]));
 							}
 							else {
 								ma.console.errorAt(['Unsupported listener (index %i, type %s) for event "%s" on Element "%s"', i, typeof listeners[event][i], event, this.id], this._className, '_setEvents');
@@ -338,6 +349,7 @@ ma.extend(ma.Element, ma.Base, {
 		}
 
 		try {
+
 			result = options.element.notify(eventName, options);
 		} catch (e) { //stops event if its handler caused error
 			extEvent.stopEvent();
@@ -349,6 +361,17 @@ ma.extend(ma.Element, ma.Base, {
 			extEvent.stopEvent();
 		}
 	}, //_htmlEventHandler()
+
+	addHandler: function(event, handler) {
+		var listener = {};
+
+		listener[event] = handler;
+		this._setEvents(listener);
+	},
+
+	on: function() {
+		this.addHandler.apply(this, arguments);
+	},
 
 	/**
 	 * Checks that the element is of given type (e.g. div, input, etc.)
@@ -415,7 +438,7 @@ ma.extend(ma.Element, ma.Base, {
 			}
 			cfg.tagName = cfg.tagName || defaultTagName;
 
-			if (cfg.id && cfg.label) {
+			if (cfg.type !== 'checkbox' && cfg.id && cfg.label) {
 				this.add({ id: cfg.id + '_label', tagName: 'label', 'for': cfg.id, innerHTML: cfg.label}, insertBefore);
 			}
 
@@ -433,6 +456,11 @@ ma.extend(ma.Element, ma.Base, {
 			}
 			elements.push(newEl);
 			newEl._parent = this; //backward reference
+
+			if (cfg.type === 'checkbox' && cfg.label) {
+				this.add({ id: newEl.id + '_label', tagName: 'label', 'for': newEl.id, innerHTML: cfg.label}, insertBefore);
+			}
+
 		}
 
 		//return value
