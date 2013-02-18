@@ -1,0 +1,81 @@
+Data Types
+==========
+This library's comments uses names of data types differently from standart JS
+
+Basic data types
+----------------
+
+  Undefined        = undefined value
+  Void / Null      = null value
+  Mixed            = any data type (usually exept undefined)
+  Boolean          = True / False
+  String           = simple string created by '' or ""
+  Integer          = simple integer value (e.g. 1, 5, 123, 0xFF)
+  Float / Double   = simple float value (1.5, 3.0, .5)
+  Object           = object created by {} parenthesis (any but Array!!!)
+  Array            = object creared by [] parenthesis
+  Array of Xxx     = array that contains only values of specified type 
+
+Note that any values are not created by constructors!!!
+e.g. Array !== new Array()
+
+Advanced data types
+-------------------
+
+  DOMelement       = element of DOM created by document.createElement()
+  Element          = element created by $.element()
+  Event            = instance of $.event class
+  
+OOP terms
+---------
+
+  class            = function that is marked as @constructor
+                     use "new class()" to create instance
+  instance         = object that was created by "new class()"
+  wrapper          = function that creates new object to wrap the given one
+                     use "wrapper(object)" to create the wrapper
+                     you don't have to use "new" keyword when creating wrapper
+  wrapper class    = each wrapper has own class to create instance of the wrapper
+                     wrapper class's name is same as wrapper's but starts with upper-cased letter
+                     do not use "new $.Wrapper()" to create it (it creates empty object)
+                     you can use "if (w instanceof $.Wrapper)" for testing
+  instance method  = method of each instance
+                     use "var i = new Class(); i.instanceMethod()" to call it
+  static method    = method its reference is stored in scope of class object
+                     use "Class.staticMethod()" to call it
+  wrapper method   = method of the wrapper of an object
+                     use "wrapper(object).wrapperMethod()" or
+                     use "var w = wrapper(object); w.wrapperMethod()" to call it
+
+
+File names and properties conventions
+-------------------------------------
+
+Properties
+
+- DO NOT USE GLOBAL PROPERTIES except "$", JS/Browser native ones (e.g. window) and special cases
+- assign window properties and method only in special cases (e.g. external libraries)
+
+- property's and method's name starts with lower-cased letter, other words stars with upper-cased letters
+    e.g. $.myObject.doMe(), var textInHtml, whoIAm()
+    
+- class's name starts with upper-cased letter
+    e.g. e = new $.Event()
+- wrapper's name starts with lower-cased letter
+    e.g. e = $.element(object)
+    
+- name of property that stores an Array and method name that returns Array ends with "-s" (or "-es")
+    e.g. var values = [], getItems()
+- in special cases "-s" is not required - e.g. property can store Object or Array
+  or can be used used in case Object is used in place of Array
+    e.g. getPos() //can return Integer or Array of Integers
+- in special cases can be "-s" used for object that stores indexed list of properties or methods
+    e.g. myMethods = {}, getIndexedItems() //returns object with names and values
+
+
+File name
+
+- files that contains library scope ($.scope) has name same as this scope (scope.js)
+- files that contains only class constructor ($.Class) has name same as the class (Class.js)
+- files that contains class constrcutor ($.Class) and its static methods ($.Class.*)
+   has name in plural of class's name starting with lower-cased letter (classes.js)
