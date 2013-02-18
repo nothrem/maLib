@@ -25,6 +25,10 @@ ma.errorAt = ma.console.errorAt;
 //shortcut for ma.Element.get() in style of Ext.get()
 ma.get = ma.Element.get;
 
+//shortcut for fast value storing (string-only!)
+ma.store = ma.Storage.set;
+ma.restore = ma.Storage.get;
+
 
 
 //methods to make important or dificult things easier
