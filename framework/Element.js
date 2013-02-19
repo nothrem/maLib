@@ -171,6 +171,10 @@ ma.Element = function(domElement){
 		//get events
 		if (config.listeners || config.on) {
 			listeners = config.listeners || config.on;
+			//make a link to look like a link
+			if (config.tagName.toLowerCase() === 'a' && ma.util.is(listeners.click, Function)) {
+				config.href = '#';
+			}
 			delete config.on;
 			delete config.listeners;
 		}
@@ -362,6 +366,9 @@ ma.extend(ma.Element, ma.Base, {
 		}
 	}, //_htmlEventHandler()
 
+	/**
+	 *   !!! NOT TESTED !!!
+	 */
 	addHandler: function(event, handler) {
 		var listener = {};
 
@@ -369,6 +376,9 @@ ma.extend(ma.Element, ma.Base, {
 		this._setEvents(listener);
 	},
 
+	/**
+	 * Alias for addHandler()
+	 */
 	on: function() {
 		this.addHandler.apply(this, arguments);
 	},
