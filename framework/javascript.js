@@ -117,6 +117,9 @@ Function.prototype.loop = function(interval, scope, params, startNow) {
 	}
 
 	return {
+		isRunning: function() {
+			return !suspended;
+		},
 		stop: function() {
 			if (fn) {
 				if (!suspended) {
@@ -178,9 +181,8 @@ Math.half = function(number, roundUp) {
 	if (true === roundUp) {
 		return Math.ceil(result);
 	}
-	else {
-		return Math.floor(result);
-	}
+
+	return Math.floor(result);
 };
 
 /**
