@@ -22,7 +22,7 @@
 
 
 /**
- * creates new object that represents a storage space 
+ * creates new object that represents a storage space
  *
  * @param [String] (required) name of the storage
  * @param [Boolean] (optional, default: false) read values from storage to get filled initial state; if false, storage will be initially empty
@@ -104,7 +104,7 @@ ma.extend(ma.Storage, ma.Base, {
 	},
 
 	/**
-	 * returns a value 
+	 * returns a value
 	 *
 	 * @param  [String] (required) name of the value
 	 * @return [Mixed/Object] value (or NULL if not defined)
@@ -186,11 +186,18 @@ ma.extend(ma.Storage, ma.Base, {
 
 		//encode to string
 		if ('object' === typeof values) {
-   			values = this._encode(values);
+			values = this._encode(values);
 		}
 
 		//save value into storage
 		localStorage.setItem(this._name, values);
+	},
+
+	/**
+	 *
+	 */
+	dump: function() {
+		return this._encode(this._values);
 	},
 
 	/**
