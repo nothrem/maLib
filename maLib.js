@@ -54,6 +54,7 @@ ma = {
 		ma.loadJS('framework/Element');
 		ma.loadJS('framework/html/Form');
 		ma.loadJS('framework/cookies');
+		ma.loadJS('framework/storage');
 		ma.loadJS('framework/ajax');
 		ma.loadJS('framework/ajaxCache');
 	},
