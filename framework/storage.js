@@ -44,6 +44,10 @@ ma.Storage = function(name, autoRead) {
 		return null;
 	}
 
+	if (ma.Storage._cache[name]) {
+		return ma.Storage._cache[name];
+	}
+
 	ma.Storage.superclass.constructor.call(this);
 
 	this.addEvents(
@@ -61,6 +65,8 @@ ma.Storage = function(name, autoRead) {
 	if (true === autoRead) {
 		this.read();
 	}
+
+	ma.Storage._cache[name] = this;
 };
 
 ma.extend(ma.Storage, ma.Base, {
@@ -117,6 +123,26 @@ ma.extend(ma.Storage, ma.Base, {
 		else {
 			return value;
 		}
+	},
+
+	/**
+	 * returns list of keys defined in the storage
+	 *
+	 * @param [void]
+	 * @return [Array]
+	 */
+	getKeys: function() {
+		var
+			keys = [],
+			key;
+
+		for (key in this._values) {
+			if (!ma.util.is(this._values[key], Function)) {
+				keys.push(key);
+			}
+		}
+
+		return keys;
 	},
 
 	/**
@@ -207,6 +233,9 @@ ma.extend(ma.Storage, ma.Base, {
 }); //extend(ma.Cookie)
 
 Ext.apply(ma.Storage, {
+	//store for existing storages
+	_cache: [],
+
 	/**
 	 * tests that local storage is supported by browser
 	 */
