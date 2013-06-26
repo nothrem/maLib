@@ -206,6 +206,7 @@ ma.util = {
 	 *            Array, Function          = object of this type (e.i. for Array = new Array() or []; for Function = function() {})
 	 *            Object                   = any object (either any of mentioned above EXCEPT Function and NULL!!)
 	 *            [Function] <Class>       = if you pass a constructor function, it will check that value is instance of this class
+	 *            [Boolean] <True/False>   = for values True and False will check if given value may be interpreted as boolean (True is equal to boolean True, non-zero number, strings "true", "1" and "1.0"; False is equal to boolean False, numeric zero and strings "false", "0" and "")
 	 *            [Mixed] <any value>      = any other value will check that value is equal to this value (e.g. is('10', 10.0); returns true as the values are equal)
 	 * @return [Boolean] true when value equals to given type
 	 */
@@ -264,6 +265,32 @@ ma.util = {
 		if (Ext.isFunction(type) || Ext.isObject(type)) {
 			return (value instanceof type);
 		}
+
+		//for values True/False check if the value may be interpreted as true/false
+		if ('boolean' === typeof type) {
+			if (('boolean' === typeof value)) {
+				return value === type;
+			}
+			if (('string' === typeof value)) {
+				if (true === type && ('true' === value.toLowerCase() || 1 == value)) {
+					return true;
+				}
+				if (false === type && ('false' === value.toLowerCase() || 0 == value || "" === value)) {
+					return true;
+				}
+				return false;
+			}
+			if ('number' === typeof value) {
+				if (true === type && 0 != value) {
+					return true;
+				}
+				if (false === type && 0 == value) {
+					return true;
+				}
+			}
+			return value == type;
+		}
+
 		//unknown type, consider it as direct value
 		return value == type;
 	}, //is()
