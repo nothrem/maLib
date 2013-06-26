@@ -145,8 +145,7 @@ ma.console = {
 			//get caller's arguments into regullar array
 			for (i = 0, c = caller.arguments.length; i < c; i++) {
 				arg = caller.arguments[i];
-				if (is(arg, false)) { arg = 'False'; }
-				if (is(arg, true)) { arg = 'True'; }
+				if (is(arg, Boolean)) { arg = arg ? 'True' : 'False'; }
 				if (is(arg, Function)) { arg = 'Function'; }
 				if (is(arg, Object)) { arg = 'Object'; }
 				callerArgs.push(arg);
