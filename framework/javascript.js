@@ -149,6 +149,26 @@ Function.prototype.loop = function(interval, scope, params, startNow) {
 	};
 }; //loop()
 
+if ('function' !== typeof Function.prototype.bind) {
+	/**
+	 * Sets scope for the method call
+	 *
+	 * @param  scope {Object} (optional, default: window) scope for the method
+	 * @param  more_params {Mixed} (optional) any more params will be prepended to params of the method
+	 * @returns {Function} new function with defined scope
+	 */
+	Function.prototype.bind = function(scope){
+		var
+			f = this,
+			params = Array.prototype.splice.call(arguments, 1);
+
+		return function(){
+			return f.apply(scope || window, params.concat(arguments));
+		};
+	};
+}
+
+
 /**
  * Sets scope for the method when called; alternative for Ext.Function.createDelegate (where 3rd param is always True)
  *
@@ -167,7 +187,84 @@ Function.prototype.setScope = function(scope, params) {
 		var args = Array.prototype.slice.call(arguments, 0).concat(params); //slice converts Arguments to valid array; then params are added
 		return method.apply(scope, args);
 	};
-}; //callback()
+};
+
+/**
+ * Adds ability to call function only once in given time period
+ * i.e. if you call method several times it will process only once (with the last params given)
+ *
+ * @param  delay {Number} (required) number of millisecons to wait for another call
+ * @param  scope {Object} (optional, default: window)
+ * @param  parms {Array}  (optional, default: []) params for the method
+ * @return {Number} index of the timer; you can use window.clearTimeout() to stop the execution using this number
+ */
+Function.prototype.buffer = function(delay, scope, params) {
+	var f = this;
+
+	scope = scope || window;
+
+	if (f.__buffer) {
+			clearTimeout(f.__buffer);
+	}
+	this.__buffer = this.defer.apply(this, arguments);
+
+	return this.__buffer;
+};
+
+/**
+ * Returns a method that can be used as buffered callback
+ * i.e. if the event happens more times in given interval, method will be processes only once (with the last params given)
+ *
+ * @param  delay {Number} (required) number of millisecons to wait for another call
+ * @param  scope {Object} (optional, default: scope passed to the returned function when called)
+ * @return {Function} Any time you call this function, it will serve as buffer for the original one (use same params as for the original method)
+ */
+Function.prototype.getBuffered = function(delay, scope, params) {
+	var f = this;
+
+	return function() {
+			f.buffer(delay, scope || this, params.concat(arguments));
+	};
+};
+
+/**
+ * Calls the method and returns the result; while the delay lasts returns the same result w/o actually calling the method
+ * Note that cached result is returned regardless of actual method params; e.g. Math.pow.cache(100, null, [10,2]); //100//; Math.pow.cache(100, null, [100,2]); //100, correct is 10000 //
+ * Use Function::cacheStop() to clear the cache and allow the method to be called again
+ *
+ * @param  delay  {Number} Number of milliseconds to cache the result for
+ * @param  scope  {Object} scope for the method call
+ * @param  params {Array}  params for the method call
+ * @return {Mixed} result of the original method
+ */
+Function.prototype.cache = function(delay, scope, params) {
+	scope = scope || window;
+
+	if (true === this.__cached) {
+		return this.__cacheResult;
+	}
+
+	this.__cached = true;
+	this.__cacheResult = this.apply(scope, params);
+	this.__cacheClear = setTimeout(this.cacheStop.bind(this), delay);
+
+	return this.__cacheResult;
+};
+
+/**
+ * Clears cached result of the first method call; next call of Function::cache() will call the method to get new result
+ *
+ * @return {Mixed} content of the cache (before it was cleared)
+ */
+Function.prototype.cacheStop = function() {
+	var result = this.cacheResult;
+
+	this.__cached = false;
+	this.cacheResult = null;
+	this.cacheClear = -1;
+
+	return result;
+};
 
 /**
  * return the number divided by 2 in integer
