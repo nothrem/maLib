@@ -94,13 +94,14 @@ ma.extend('ma.Element.Table', ma.Element, {
 	 */
 	add: function(config, insertBefore) {
 		var
+			is = ma.util.is,
 			cfg,
 			i, cnt,
 			newEl,
 			elements = [];
 
 		//for any non-array, create new Array (even empty for undefined etc.)
-		if (!ma.util.is(config, Array)){
+		if (!is(config, Array)){
 			config = [config]; //create array from single object
 		}
 
@@ -141,24 +142,3 @@ ma.extend('ma.Element.Table', ma.Element, {
 	} //add()
 
 }); //extend(ma.Element.Form)
-
-ma.Element.FormItem = function(domElement){
-
-	if (domElement.formIdPrefix) {
-		domElement.id = domElement.formIdPrefix + domElement.id;
-		delete domElement.formIdPrefix;
-	}
-
-	ma.Element.FormItem.superclass.constructor.apply(this, arguments);
-
-}; //ma.Element
-
-ma.extend('ma.Element.FormItem', ma.Element, {
-/**
- * @scope ma.Element.Form
- */
-
-	setValue: function() {
-		ma.console.errorAt('TODO', 'ma.Element.FormItem', 'setValue');
-	}
-}

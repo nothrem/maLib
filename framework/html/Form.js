@@ -205,7 +205,7 @@ ma.extend('ma.Element.Form', ma.Element, {
  *
  * @param  [Object] Element configuration
  *                    .id          [String] (required) id of the item
- *                    .type        [String] (optional, default: text) supported types: 'text', 'checkbox', 'select'
+ *                    .type        [String] (optional, default: text) supported types: 'text', 'checkbox', 'select', 'submit'
  *                    .caption     [String] (optional) description of the item
  *                    .value       [Mixed] (optional) type of value depends on item type (e.g. String for text, Boolean for checkbox, etc.)
  *                    .values      [Array] (optional; only for type=select) defines list (of strings) for the select's options
@@ -326,7 +326,7 @@ ma.extend('ma.Element.FormItem', ma.Element, {
  */
 
 	/**
-	 * Checks that the element if of given type
+	 * Checks that the element is of given type
 	 *
 	 * @param  [String] tagName or type (e.g. 'input', 'select' or 'checkbox')
 	 * @return [Boolean]
