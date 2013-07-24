@@ -70,9 +70,9 @@ ma = {
 		//ma can init only when Ext is ready and the document body exists
 		if (ma.isDefined('window.Ext')) {
 			if (ma.isDefined('window.document.body', true)) {
-				ma.registerInitFunction(ma.onReady, '', 'onReady'); //putOnReady as last method to be executed
+				ma.registerInitFunction(ma.onReady, '', 'onReady'); //put onReady as last method to be executed
 				ma._onInitExecuter();
-				ma._isReady = true; //tells that page is initialased and ready for developer interaction
+				ma._isReady = true; //tells that page is initialized and ready for developer interaction
 			}
 			else {
 				window.setTimeout(ma._init, 10);
@@ -260,7 +260,7 @@ ma = {
 	 *
 	 * @param  [Function] initialization function
 	 * @param  [String]  (optional, default: none) name of namespace that must be defined before init can be called (e.g. 'ma.console' to wait for ma.console to initialize)
-	 * @return [Boolean] true if function was already executed, false for funtion registered, null for error
+	 * @return [Boolean] true if function was already executed, false for function registered, null for error
 	 */
 	registerInitFunction: function(initFunction, required, name){
 		required = required || 'window.ma';
@@ -293,7 +293,7 @@ ma = {
 	 * exucutes initFunction
 	 *
 	 * @param  [Function] reference to initFunction
-	 * @return [Boolean]  true when function was already executed, false for posponed ones
+	 * @return [Boolean]  true when function was already executed, false for postponed ones
 	 */
 	_runInitFunction: function(initFunction, index){
 		if ('function' !== typeof initFunction) {
@@ -307,26 +307,34 @@ ma = {
 		if ('string' === typeof required && !ma.isDefined(required)) {
 			ma.console.log('Init method ' + name + index + ' is waiting for ' + required);
 			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
-				ma._onInit.waiting = window.setInterval("ma._onInitExecuter()", 500);
+				ma._onInit.waiting = window.setInterval(ma._onInitExecuter, 50);
 			}
 			return false;
 		}
 		ma.console.log('Init method ' + name + index + ' is ready to execute');
-		initFunction.call(window); //call as function in the scope of window
+		initFunction();
 		return true;
 	},
 
 	/**
 	 * load JavaScript file into HTML head
-	 * !can be called only from script within HTML's HEAD or BODY (see ma.ajax.request::isJS for later JS loading)
 	 *
 	 * @param  [String] file name
 	 * @param  [Boolean] (optional, default: false) if true, file will be loaded from web root, otherwise it will be loaded from maLib folder
 	 * @return [void]
 	 */
 	loadJS: function(fileName, rootPath){
-		var write = 'write'; //prevents JSlint from saying that document.write is evil ;)
-		document[write]('<script type="text/javascript" src="' + (true === rootPath ? '' : ma._filePath + '/') + fileName + '.js"></script>');
+		if (ma.isReady()) {
+			var script = document.createElement('script'), head = document.head || document.getElementByTagName('head')[0];
+
+			script.type = 'text/javascript';
+			script.src = (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js';
+			head.appendChild(script);
+		}
+		else {
+			var write = 'write'; //prevents JSlint from saying that document.write is evil ;)
+			document[write]('<script type="text/javascript" src="' + (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js"></script>');
+		}
 	}, //loadJS()
 	/**
 	 * load CSS file into HTML head
@@ -339,7 +347,7 @@ ma = {
 		var link = document.createElement('LINK');
 		link.setAttribute('type', 'text/css');
 		link.setAttribute('rel', 'stylesheet');
-		link.setAttribute('href',  (true === rootPath ? '' : ma._filePath + '/') + fileName + '.css');
+		link.setAttribute('href',  (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.css');
 		document.getElementsByTagName("head").item(0).appendChild(link);
 	}, //loadCSS
 	/**
@@ -449,6 +457,18 @@ if (false) {
  * Initialization after page is loaded
  * window.onload is alias for body.onload; its just available before body is created ;)
  */
-window.onload = function() {
-	ma._init();
-};
+(function(window, onload, onunload) {
+	window.onload = function() {
+		if ('function' === typeof onload) {
+			onload.apply(window, arguments);
+		}
+		ma._init();
+	};
+	window.onunload = function() {
+		if ('function' === typeof onload) {
+			onunload.apply(window, arguments);
+		}
+		ma.console.log('Please ignore error "TypeError: h is null"');
+	};
+
+})(window, window.onload, window.onunload);

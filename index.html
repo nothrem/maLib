@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<link rel="shortcut icon" href="favicon.ico">
+		<script type="text/javascript" src="maLib.js"></script>
+		<title>maLib (JS library folder)</title>
+	</head>
+	<body>
+	<h1>maLib</h1>
+	<p id="warning">&nbsp;</p>
+		<noscript>
+			<p>Pro zobrazení této aplikace musíte mít zapnutý Javascript.</p>
+			<p>Podívejte se, prosím, do nápovědy Vašeho prohlížeče, jak JavaScript zapnout.</p>
+		</noscript>
+		<script type="text/javascript" charset="utf-8">
+		ma.onReady = function() {
+			var p = ma.Element.get('warning');
+
+			p.setValue('V této složce je uložena JS knihovna maLib. Obsah této složky není určen pro zobrazení obsahu. ');
+			p.add({
+				tagName:   'a',
+				innerHTML: 'Pro zobrazení obsahu přejděte na hlavní stránku serveru...',
+				href:      '/'
+			});
+
+		};
+		</script>
+	</body>
+</html>
