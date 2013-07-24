@@ -110,6 +110,11 @@ ma.extend('ma._Browser', ma.Base, {
 		minVersion: 9,
 		maxVersion: 10
 	},
+	ie10: {
+		name:      'Explorer',
+		minVersion: 10,
+		maxVersion: 11
+	},
 	ff2: {
 		name:      'Firefox',
 		minVersion: 2,
@@ -163,6 +168,10 @@ ma.extend('ma._Browser', ma.Base, {
 		minVersion: 5,
 		maxVersion: 6
 	},
+	safari6: {
+		name:      'Safari',
+		minVersion: 6
+	},
 	chrome: {
 		name:      'Chrome',
 		minVersion: 3
@@ -176,6 +185,10 @@ ma.extend('ma._Browser', ma.Base, {
 		name:      'Opera',
 		minVersion: 10,
 		maxVersion: 11
+	},
+	opera11: {
+		name:      'Opera',
+		minVersion: 11
 	},
 	windows: {
 		os:      'Windows'
@@ -191,6 +204,23 @@ ma.extend('ma._Browser', ma.Base, {
 	},
 	ipad: {
 		os:      'iPad'
+	},
+	android: {
+		os:      'Android'
+	},
+	android2: {
+		name:      'Android',
+		minVersion: 2,
+		maxVersion: 3
+	},
+	android3: {
+		name:      'Android',
+		minVersion: 3,
+		maxVersion: 4
+	},
+	android4: {
+		name:      'Android',
+		minVersion: 4
 	},
 
 	/**
