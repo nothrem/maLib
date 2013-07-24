@@ -232,23 +232,52 @@ Function.prototype.getBuffered = function(delay, scope, params) {
  * Note that cached result is returned regardless of actual method params; e.g. Math.pow.cache(100, null, [10,2]); //100//; Math.pow.cache(100, null, [100,2]); //100, correct is 10000 //
  * Use Function::cacheStop() to clear the cache and allow the method to be called again
  *
- * @param  delay  {Number} Number of milliseconds to cache the result for
- * @param  scope  {Object} scope for the method call
- * @param  params {Array}  params for the method call
- * @return {Mixed} result of the original method
+ * @param  delay  {Number} (optional, default: 0) Number of milliseconds to cache the result for.
+ *                               For positive numbers (0 and larger) the cache will always last until the end of current processing scope (e.g. in long FOR it will return same result even for delay = 0).
+ *                               For negative numbers (-1, -100, etc) the cache will be always cleared after specified delay times out (e.g. in long FOR it will check result every [delay] milliseconds).
+ * @param  scope  {Object} (optional, default: window) Scope for the method call.
+ * @param  params {Array}  (optional, default: no params) Params for the method call.
+ * @return {Mixed} Result of the first call of the original method.
+ * @example <code>
+	var f = function(i) { return i; }; //simple retuns its first param
+
+	//without cache - will print numbers from 0 to 100
+	for (var i = 0; i < 100; i++) { console.log(f(i))); }
+	//for positive delay - will print zero for 100 times
+	for (var i = 0; i < 100; i++) { console.log(f.cache(1, window, [i])); }
+	//for negative delay - will repeat one result several times and then go to another one (e.g. 0,0,0,0,4,4,4,7,7,9,9,...)
+	for (var i = 0; i < 100; i++) { console.log(f.cache(-10, window, [i])); }
+
+	//for different params returns same cached result
+	Math.abs.cache(100, window, [-5]);  //returns "5"
+	Math.abs.cache(100, window, [-10]); //returns "5" (instead of 10)
+
+	//to get different results you must create new method
+	var abs = function() { return Math.abs.apply(Math, arguments); }; //calls abs() for given param
+	Math.abs.cache(100, window, [-5]);  //returns "5"
+	abs.cache(100, window, [-9]);       //returns "9"
+	Math.abs.cache(100, window, [-10]); //returns "5" (instead of 10)
+	abs.cache(100, window, [-4]);       //returns "9" (instead of 4)
+	</code>
  */
 Function.prototype.cache = function(delay, scope, params) {
-	scope = scope || window;
+		var limit = (0 > delay);
 
-	if (true === this.__cached) {
+		scope = scope || window;
+		delay = Math.abs(delay || 0);
+
+		if (true === this.__cached && (!this.__cacheEnd || new Date() < this.__cacheEnd)) {
+			return this.__cacheResult;
+		}
+
+		this.cacheStop();
+
+		this.__cached = true;
+		this.__cacheResult = this.apply(scope, params);
+		this.__cacheClear = setTimeout(this.cacheStop.bind(this), delay);
+		this.__cacheEnd = limit ? new Date((new Date()).getTime() + delay) : undefined;
+
 		return this.__cacheResult;
-	}
-
-	this.__cached = true;
-	this.__cacheResult = this.apply(scope, params);
-	this.__cacheClear = setTimeout(this.cacheStop.bind(this), delay);
-
-	return this.__cacheResult;
 };
 
 /**
@@ -257,11 +286,15 @@ Function.prototype.cache = function(delay, scope, params) {
  * @return {Mixed} content of the cache (before it was cleared)
  */
 Function.prototype.cacheStop = function() {
-	var result = this.cacheResult;
+	var result = this.__cacheResult;
+
+	if (this.__cacheClear) {
+		clearTimeout(this.__cacheClear);
+	}
 
 	this.__cached = false;
-	this.cacheResult = null;
-	this.cacheClear = -1;
+	this.__cacheResult = null;
+	this.__cacheClear = -1;
 
 	return result;
 };
