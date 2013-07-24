@@ -59,7 +59,7 @@ ma.Storage = function(name, autoRead) {
 	//set own properties at once
 	this.merge({
 		_name: name,
-		_values: {},
+		_values: {}
 	});
 
 	if (true === autoRead) {
@@ -118,7 +118,7 @@ ma.extend(ma.Storage, ma.Base, {
 		var value = this._values[name];
 
 		if (undefined === name) {
-			return NULL;
+			return null;
 		}
 		else {
 			return value;
@@ -249,7 +249,7 @@ Ext.apply(ma.Storage, {
 		storage.write();
 
 		storage = new ma.Storage(name);
-		storage.read(name);
+		storage.read();
 
 		if (value !== storage.get(name)) {
 			ma.console.warn('LocalStorage is not supported on this client!');
@@ -277,15 +277,15 @@ Ext.apply(ma.Storage, {
 			value = ma.Storage.prototype._decode(json);
 
 		if (ma.util.is(value, null)) { //if original value was saved as plain string, JSON returns NULL...
-			return json;
+			return json;               //... then return the raw value
 		}
-		else {                         //... then return the raw value
+		else {
 			return value;
 		}
 	},
 
 	/**
-	 * Quickly reads a value from browser storage
+	 * Quickly sets new value into browser storage
 	 *
 	 * @param  [String] name
 	 * @param  [String] value

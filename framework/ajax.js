@@ -358,7 +358,7 @@ ma.extend(ma._Ajax, ma.Base, {
 			requests = [],
 			i, cnt;
 
-		if (isnt(params, Array)) {
+		if (!ma.util.is(params, Array)) {
 			ma.console.error('Invalid params for Batch');
 		}
 
