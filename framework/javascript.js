@@ -322,9 +322,14 @@ Function.prototype.cacheStop = function() {
 
 	myObject.getValue = myObject.getValue.override(myObject.getValue); //overriding method can be used to override another method
 	myObject.getValue.overridden.overridden.overridden.call(myObject); //returns 5.1 (this calls the original method from 1st row)
+
+	noValue = {value: 0};
+	myObject.getValue   = myObject.getValue.override(myObject.getValue, noValue); //returns value 0 (as read from noValue object instead of myObject); use arguments.callee.overrideScope to get myObject
+	//myObject.getValue = myObject.getValue.override(myObject.getValue.bind(noValue)); //DO NOT USE - seems to work as same as the line above but cannot use arguments.callee.overridden inside the method
+	//myObject.getValue = myObject.getValue.override(myObject.getValue).bind(noValue); //DO NOT USE - seems to work as same as the line above but loses the overridden property!!!
 </code>
  */
-Function.prototype.override = function(func) {
+Function.prototype.override = function(func, scope) {
 	if ('function' !== typeof func) {
 		func = function() {};
 	}
@@ -333,16 +338,20 @@ Function.prototype.override = function(func) {
 			var
 				isOverridden = func.hasOwnProperty('overridden'),
 				overridden = func.overridden,
+				overrideScope = func.overrideScope,
 				result;
 
 			func.overridden = arguments.callee.overridden;
-			result = func.apply(this, arguments);
+			func.overrideScope = this;
+			result = func.apply(scope || this, arguments);
 
 			if (isOverridden) {
 				func.overridden = overridden;
+				func.overrideScope = overrideScope;
 			}
 			else {
 				delete func.overridden;
+				delete func.overrideScope;
 			}
 
 			return result;
