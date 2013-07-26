@@ -300,6 +300,60 @@ Function.prototype.cacheStop = function() {
 };
 
 /**
+ * Creates new function; original one can be accessed via its overriden property
+ *
+ * @param  func {Function} function to be used as new one
+ * @return {Function} new function (note that this is NOT the "func" function - you can use one function to override many different functions
+ *
+ * @example <code>
+	myObject = { getValue: function() { return this.value; } };
+	myObject.getValue = myObject.getValue.override(function() {
+		return this.value.toString(); //return value as a string instead of using the original method
+	});
+	myObject.value = 5.1;
+	myObject.getValue(); //returns "5.1"
+	myObject.getValue.overridden.call(myObject); //returns 5.1
+
+	myObject.getValue = myObject.getValue.override(function() {
+		return parseInt(arguments.callee.overridden.call(this)); //return value converted to string as an integer
+	});
+	myObject.getValue(); //returns 5 (which is converted from 5.1 to "5.1" and then to 5)
+	myObject.getValue.overridden.overridden.call(myObject); //returns 5.1 (this calls the original method from 1st row)
+
+	myObject.getValue = myObject.getValue.override(myObject.getValue); //overriding method can be used to override another method
+	myObject.getValue.overridden.overridden.overridden.call(myObject); //returns 5.1 (this calls the original method from 1st row)
+</code>
+ */
+Function.prototype.override = function(func) {
+	if ('function' !== typeof func) {
+		func = function() {};
+	}
+
+	var newF = function() {
+			var
+				isOverridden = func.hasOwnProperty('overridden'),
+				overridden = func.overridden,
+				result;
+
+			func.overridden = arguments.callee.overridden;
+			result = func.apply(this, arguments);
+
+			if (isOverridden) {
+				func.overridden = overridden;
+			}
+			else {
+				delete func.overridden;
+			}
+
+			return result;
+		};
+
+	newF.overridden = this;
+
+	return newF;
+};
+
+/**
  * return the number divided by 2 in integer
  *
  * @param  [Number] number to divide
