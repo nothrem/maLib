@@ -317,3 +317,7 @@ ma.util = {
 
 };
 
+/**
+ * Alias for checking a type
+ */
+ma.is = ma.util.is;

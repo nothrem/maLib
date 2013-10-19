@@ -72,6 +72,11 @@ ma._Browser = function() {
 	this.body.addClass('br-' + this._name);
 	this.body.addClass('br-ver-' + this._version);
 	this.body.addClass('os-' + this._os);
+
+	//make sure URL contains hash mark on first load - otherwise onhashchange will not work when returning back
+	location.replace(location.hash || '#');
+
+//	(new ma.Element(window)).on('onhashchange', this._onStateChange.bind(this));
 };
 
 ma.extend('ma._Browser', ma.Base, {
@@ -394,7 +399,7 @@ ma.extend('ma._Browser', ma.Base, {
 			states = window.location.hash,
 			i, cnt, state;
 
-		states = states.replace('#', ''); //hash contains the hash symbol but we don't want it
+		states = states.replace(/^#/, ''); //hash contains the hash symbol but we don't want it
 
 		if (ma.util.is(states, 'empty')) {
 			return []; //no states yet, just get empty array (otherwise it would generate array with empty string!)
@@ -427,6 +432,12 @@ ma.extend('ma._Browser', ma.Base, {
 		states = states.join('&');
 
 		window.location.hash = states;
+	},
+
+	_onStateChange: function() {
+		var states = this._parseState();
+
+		this.notify('changeState', states);
 	},
 
 	/**
@@ -513,7 +524,7 @@ ma.extend('ma._Browser', ma.Base, {
 				'keyUp': { handler: 'onkeyup', event: 'keyup', element: 'document' },
 				'keyPress': { handler: 'onkeypress', event: 'keypress', element: 'document' },
 				'resize': { handler: 'onresize', event: 'resize', element: 'window' },
-				'changeState': { element: 'none' }
+				'changeState': { handler: 'onhashchange', event: 'onhashchange', element: 'window' }
 			},
 			i, cnt, event;
 

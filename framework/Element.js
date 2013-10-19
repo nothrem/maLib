@@ -1232,13 +1232,15 @@ Ext.apply(ma.Element, {
 	 * @param  [String] CSS query (e.g. "#id", ".className", "tagName", "tagName#id.className", etc.)
 	 * @return [Array] list of Elements
 	 */
-	find: function(query) {
+	find: function(query, container) {
 		var
 			domElements,
 			i, cnt,
 			maElements = [];
 
-		domElements = Ext.query(query);
+		container = (container ? (new ma.Element(container)).dom : undefined);
+
+		domElements = Ext.query(query, container);
 
 		for (i = 0, cnt = domElements.length; i < cnt; i++) {
 			maElements.push(new ma.Element(domElements[i]));
@@ -1329,3 +1331,19 @@ Ext.apply(ma.Element, {
 	} //callOnChildren()
 
 });
+
+/**
+ * Returns element based on either its ID or search query
+ *
+ * @param  query {String}
+ * @param  container {ma.Element}
+ */
+ma.get = function(query, container) {
+	var el = ma.Element.get(query) || ma.Element.find(query, container ? ma.get(container) : undefined);
+
+	if (!ma.util.is(el, Array)) {
+		el = [el];
+	}
+
+	return el;
+};
