@@ -229,6 +229,28 @@ ma.extend(ma.Element, ma.Base, {
 	_fullName: 'ma.Element',
 	_class: ma.Element,
 
+	_htmlEvents: {
+		'click': { handler: 'onclick', event: 'click' },
+		'doubleClick': { handler: 'ondblclick', event: 'dblClick' },
+		'mouseDown': { handler: 'onmousedown', event: 'mousedown' },
+		'mouseUp': { handler: 'onmouseup', event: 'mouseup' },
+		'mouseMove': { handler: 'onmousemove', event: 'mousemove' },
+		'mouseOver': { handler: 'onmouseover', event: 'mouseover' },
+		'mouseOut': { handler: 'onmouseout', event: 'mouseout' },
+		'keyDown': { handler: 'onkeydown', event: 'keydown' },
+		'keyUp': { handler: 'onkeyup', event: 'keyup' },
+		'keyPress': { handler: 'onkeypress', event: 'keypress' },
+		'resize': { handler: 'onresize', event: 'resize' },
+		'move': { handler: 'onmove', event: 'move' },
+		'focus': { handler: 'onfocus', event: 'focus' },
+		'blur': { handler: 'onblur', event: 'blur' },
+		'select': { handler: 'onselect', event: 'select' },
+		'change': { handler: 'onchange', event: 'change' },
+		'submit': { handler: 'onsubmit', event: 'submit' },
+		'reset': { handler: 'onreset', event: 'reset' },
+		'unload': { handler: 'onunload', event: 'unload' }
+	},
+
 	/**
 	 * @private
 	 * registers new Element into global list of elements
@@ -249,27 +271,7 @@ ma.extend(ma.Element, ma.Base, {
 	 */
 	_setEvents: function(listeners) {
 		var
-			htmlEvents = {
-				'click': { handler: 'onclick', event: 'click' },
-				'doubleClick': { handler: 'ondblclick', event: 'dblClick' },
-				'mouseDown': { handler: 'onmousedown', event: 'mousedown' },
-				'mouseUp': { handler: 'onmouseup', event: 'mouseup' },
-				'mouseMove': { handler: 'onmousemove', event: 'mousemove' },
-				'mouseOver': { handler: 'onmouseover', event: 'mouseover' },
-				'mouseOut': { handler: 'onmouseout', event: 'mouseout' },
-				'keyDown': { handler: 'onkeydown', event: 'keydown' },
-				'keyUp': { handler: 'onkeyup', event: 'keyup' },
-				'keyPress': { handler: 'onkeypress', event: 'keypress' },
-				'resize': { handler: 'onresize', event: 'resize' },
-				'move': { handler: 'onmove', event: 'move' },
-				'focus': { handler: 'onfocus', event: 'focus' },
-				'blur': { handler: 'onblur', event: 'blur' },
-				'select': { handler: 'onselect', event: 'select' },
-				'change': { handler: 'onchange', event: 'change' },
-				'submit': { handler: 'onsubmit', event: 'submit' },
-				'reset': { handler: 'onreset', event: 'reset' },
-				'unload': { handler: 'onunload', event: 'unload' }
-			},
+			htmlEvents = this._htmlEvents,
 			i, cnt, event;
 
 		this.addEvents('contentLoaded', 'set');
@@ -353,7 +355,6 @@ ma.extend(ma.Element, ma.Base, {
 		}
 
 		try {
-
 			result = options.element.notify(eventName, options);
 		} catch (e) { //stops event if its handler caused error
 			extEvent.stopEvent();
@@ -363,6 +364,7 @@ ma.extend(ma.Element, ma.Base, {
 		}
 		if (!result) {
 			extEvent.stopEvent();
+			extEvent.stopPropagation();
 		}
 	}, //_htmlEventHandler()
 
@@ -370,10 +372,17 @@ ma.extend(ma.Element, ma.Base, {
 	 *   !!! NOT TESTED !!!
 	 */
 	addHandler: function(event, handler) {
-		var listener = {};
-
-		listener[event] = handler;
-		this._setEvents(listener);
+		if (this._htmlEvents[event]) {
+			if (ma.util.is(handler, Function)) {
+				this.addListener(event, this._htmlHandlerHelper.setScope(this, [handler]));
+			}
+			else {
+				ma.console.errorAt('Invalid event handler for event ' + event, this._fullName, 'addHandler');
+			}
+		}
+		else {
+			ma.console.errorAt('Invalid event "' + event + '" to listen to.', this._fullName, 'addHandler');
+		}
 	},
 
 	/**
@@ -636,7 +645,7 @@ ma.extend(ma.Element, ma.Base, {
 			return;
 		}
 
-		parent.dom.appendChild(this);
+		parent.dom.appendChild(this.dom);
 
 		this._parent = parent; //change parent for case it was already cached
 	},
@@ -1333,13 +1342,30 @@ Ext.apply(ma.Element, {
 });
 
 /**
- * Returns element based on either its ID or search query
+ * Returns elements based on either its ID or search query
  *
  * @param  query {String}
  * @param  container {ma.Element}
+ * @return {Array} list of elements
  */
-ma.get = function(query, container) {
-	var el = ma.Element.get(query) || ma.Element.find(query, container ? ma.get(container) : undefined);
+ma.getAll = function(query, container) {
+	var
+		parent, el;
+
+	el = ma.Element.get(query);
+
+	if (!el) {
+		if (!container) {
+			el = ma.Element.find(query);
+		}
+		else {
+			parent = ma.get(container);
+
+			if (container && parent) {
+				el = ma.Element.find(query, parent);
+			}
+		}
+	}
 
 	if (!ma.util.is(el, Array)) {
 		el = [el];
@@ -1347,3 +1373,17 @@ ma.get = function(query, container) {
 
 	return el;
 };
+
+/**
+ * Returns first element matching given ID or search query
+ *
+ *
+ * @param  query {String}
+ * @param  container {ma.Element}
+ * @return {Ma.Element} an element
+ */
+ma.get = function(query, container) {
+	var el = ma.getAll.apply(ma, arguments);
+	return el[0];
+};
+
