@@ -599,7 +599,25 @@ ma.extend('ma._Browser', ma.Base, {
 		if (!result) {
 			extEvent.stopEvent();
 		}
-	} //_htmlEventHandler()
+	}, //_htmlEventHandler()
+
+	/**
+	 * Redirect to different URL
+	 *
+	 * @param  url {String} (required) URL where to redirect
+	 * @param  timeout {Number} (optional, default: 100) allows to postpone the redirect; this is required on Android to display mask etc.
+	 */
+	redirect: function(url, timeout) {
+		if (undefined === timeout) {
+			timeout = 100;
+		}
+		if (0 === timeout) {
+			location.href = url;
+			return;
+		}
+
+		arguments.callee.defer(timeout, this, [url, 0]);
+	}
 
 
 }); //extend(ma._Browser)
