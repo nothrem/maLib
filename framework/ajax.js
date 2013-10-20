@@ -143,6 +143,7 @@ ma.extend(ma._Ajax, ma.Base, {
 	 *          .token      [String] (optional, required for request() method) security token for dataMiner
 	 *          .headers    [Object] (optional, default: none) HTTP headers for request; see Ext.Ajax.request.header
 	 *          .noCaching  [String] (optional, default: '_hash') name of param to prevent response caching (e.g. in IE), empty string to allow caching
+	 *          .rawJson    [Boolean] (optional, default: false) for ma.ajax.request(); false = json will be send in POST['json']; true = json will be posted in POST body as raw string
 	 * @return [void]
 	 *
 	 * Note: Optional params do NOT always set its default value when not present but keeps the previous one; default value is only for first call
@@ -165,6 +166,8 @@ ma.extend(ma._Ajax, ma.Base, {
 		if ('string' === typeof options.token) {
 			ma.ajax._token = options.token;
 		}
+
+		ma.ajax._rawJson = (true === options.rawJson);
 	}, //setDefaultParams()
 
 	/**
@@ -283,11 +286,17 @@ ma.extend(ma._Ajax, ma.Base, {
 			ma.console.errorAt('Undefined data param.', 'ma.ajax', 'request');
 		}
 
-		extParams = {
-			params: {
+		data = (ma.ajax._rawJson
+			? this.jsonEncode(options.data)
+			: {
 				json: this.jsonEncode(options.data),
 				xtoken: ma.ajax._token || ma.Cookie.get('xtoken')
-			},
+			}
+		);
+
+		extParams = {
+			params: data,
+			headers: { 'X-token': ma.ajax._token || 0 },
 			callback: this._requestCallback,
 			scope: { //fictive object to serve as scope and keep options required by callback
 				ajax: this,
