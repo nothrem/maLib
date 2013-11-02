@@ -1591,7 +1591,7 @@ Ext.util.DelayedTask = function(fn, scope, args){
             var i, len, li, lis;
             if (el && fn) {
                 if(eventName == UNLOAD){
-                    if((lis = unloadListeners[el.id]) !== undefined){
+                    if(unloadListeners && (lis = unloadListeners[el.id]) !== undefined){
                         for(i = 0, len = lis.length; i < len; i++){
                             if((li = lis[i]) && li[TYPE] == eventName && li[FN] == fn){
                                 unloadListeners[id].splice(i, 1);
