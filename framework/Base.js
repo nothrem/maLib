@@ -52,6 +52,16 @@ Ext.extend(ma.Base, ma.Observable, {
 	_class: ma.Base,
 
 	/**
+	 * Calls inherited (superclass'/parent's) constructor with given arguments
+	 *
+	 * @param  args {Arguments} list of arguments of the contructor
+	 * @return {Mixed} result of the parent constructor - in most cases it should be the calling object (i.e. 'this')
+	 */
+	inherit: function(args) {
+		return this.superclass().constructor.apply(this, args);
+	},
+
+	/**
 	 * Merges this object with given values (deep merge)
 	 *
 	 * @param  values [Object] object with properties

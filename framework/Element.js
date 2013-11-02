@@ -91,7 +91,7 @@ ma.Element = function(domElement){
 		return domElement._ma_wrapper;
 	}
 
-	ma.Element.superclass.constructor.apply(this, arguments);
+	this.inherit(arguments);
 
 	//Create new element from configuration
 	if (!is(domElement, HTMLElement)) { //we only get element configuration
@@ -1179,6 +1179,19 @@ ma.extend(ma.Element, ma.Base, {
 	isTextField: function() {
 		var dom = this.dom;
 		return ('INPUT' === this.tagName && ('text' === dom.type || 'password' === dom.type));
+	},
+
+	/**
+	 * Returns jQuery wrapper for this element (uses cache so it's fast when used repeatedly)
+	 *
+	 * @return {jQuery} jQuery wrapper of this element
+	 */
+	$: function() {
+		if (!this.jQuery) {
+			this.jQuery = $(this.dom);
+		}
+
+		return this.jQuery;
 	}
 
 
@@ -1359,7 +1372,12 @@ ma.getAll = function(query, container) {
 			el = ma.Element.find(query);
 		}
 		else {
-			parent = ma.get(container);
+			if (container instanceof ma.Element) {
+				parent = container.dom;
+			}
+			else {
+				parent = ma.get(container);
+			}
 
 			if (container && parent) {
 				el = ma.Element.find(query, parent);
