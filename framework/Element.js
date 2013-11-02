@@ -1179,6 +1179,19 @@ ma.extend(ma.Element, ma.Base, {
 	isTextField: function() {
 		var dom = this.dom;
 		return ('INPUT' === this.tagName && ('text' === dom.type || 'password' === dom.type));
+	},
+
+	/**
+	 * Returns jQuery wrapper for this element (uses cache so it's fast when used repeatedly)
+	 *
+	 * @return {jQuery} jQuery wrapper of this element
+	 */
+	$: function() {
+		if (!this._jQuery) {
+			this._jQuery = $(this.dom);
+		}
+
+		return this._jQuery;
 	}
 
 
