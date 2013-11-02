@@ -90,6 +90,13 @@ ma.extend(ma.Observable, Ext.util.Observable, {
 	}, //notify()
 
 	/**
+	 * Alias for notify() method (for compatibility with jQuery and other frameworks)
+	 */
+	trigger: function() {
+		this.notify.apply(this, arguments);
+	},
+
+	/**
 	 * adds new events to this object
 	 *
 	 * @param  [String, ...] any number of event names
