@@ -91,7 +91,7 @@ ma.Element = function(domElement){
 		return domElement._ma_wrapper;
 	}
 
-	ma.Element.superclass.constructor.apply(this, arguments);
+	this.inherit(arguments);
 
 	//Create new element from configuration
 	if (!is(domElement, HTMLElement)) { //we only get element configuration
