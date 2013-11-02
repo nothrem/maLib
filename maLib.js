@@ -419,10 +419,10 @@ ma = {
 				throw new Error('Extend: Missing class name. Either call extend with string className param or define own property methods._className');
 			}
 			if (!methods._class) {
-				throw new Error('Extend: Missing class reference. Either call extend with string className param or define own property methods._className');
+				throw new Error('Extend: Missing class reference. Either call extend with string className param or define own property methods._class');
 			}
 			if (!methods._fullName) {
-				throw new Error('Extend: Missing full name. Either call extend with string className param or define own property methods._className');
+				throw new Error('Extend: Missing full name. Either call extend with string className param or define own property methods._fullName');
 			}
 		}
 
