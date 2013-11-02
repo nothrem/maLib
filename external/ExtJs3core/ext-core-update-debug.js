@@ -6463,7 +6463,7 @@ Ext.Ajax.request({
                           failure: me.handleFailure,
                           scope: me,
                           argument: {options: o},
-                          timeout : Ext.num(o.timeout, me.timeout)
+                          timeout : Ext.isNumber(o.timeout, me.timeout)
                     },
                     form,
                     serForm;
