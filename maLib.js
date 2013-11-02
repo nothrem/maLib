@@ -40,10 +40,15 @@ ma = {
 	_loadFiles: function(path){
 		path = path || '';
 		ma._filePath = path;
+		//load CSS files for jQuery UI
+		ma.loadCSS('external/jQuery/jquery-ui' + (ma._isDebug ? '' : '.min')); //jQuery UI theme
 		//load external files and frameworks
 		ma.loadJS('external/printf');
-		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-debug' : 'external/ExtJs3core/ext-core'); //Ext 3.1.1
-		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-update-debug' : 'external/ExtJs3core/ext-core-update'); //Ext 3.4.1.1 (only changed objects, requires previous full ExtJS Core file)
+		ma.loadJS('external/jQuery/jquery' + (ma._isDebug ? '' : '.min')); //jQuery
+		ma.loadJS('external/jQuery/jquery-ui' + (ma._isDebug ? '' : '.min')); //jQuery UI
+		ma.loadJS('external/jQuery/jquery-ui-i18n' + (ma._isDebug ? '' : '.min')); //jQuery
+		ma.loadJS('external/ExtJs3core/ext-jquery-adapter' + (ma._isDebug ? '-debug' : '')); //jQuery-to-Ext convertor
+		ma.loadJS('external/ExtJs3core/ext-core-update' + (ma._isDebug ? '-debug' : '')); //Ext 3.4.1.1 (requires Ext-Base or Ext-Adapter to base on)
 		//load internal files
 		ma.loadJS('framework/javascript');
 		ma.loadJS('framework/console');
