@@ -42,7 +42,8 @@ ma = {
 		ma._filePath = path;
 		//load external files and frameworks
 		ma.loadJS('external/printf');
-		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-debug' : 'external/ExtJs3core/ext-core');
+		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-debug' : 'external/ExtJs3core/ext-core'); //Ext 3.1.1
+		ma.loadJS(ma._isDebug ? 'external/ExtJs3core/ext-core-update-debug' : 'external/ExtJs3core/ext-core-update'); //Ext 3.4.1.1 (only changed objects, requires previous full ExtJS Core file)
 		//load internal files
 		ma.loadJS('framework/javascript');
 		ma.loadJS('framework/console');
