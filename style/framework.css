@@ -3,11 +3,11 @@
 }
 
 #browserInfo {
-  font-style: italic;
-  color: gray;
-  text-align: center;
-  font-size: 16px;
-  background: #fff;
+	font-style: italic;
+	color: gray;
+	text-align: center;
+	font-size: 16px;
+	background: #fff;
 }
 
 #browserInfo p {
@@ -39,4 +39,9 @@
 	opacity:1;
 	border: 3px solid black;
 	padding: 1em;
+}
+
+input[type|=text],
+input[type|=password] {
+	text-align: left;
 }
