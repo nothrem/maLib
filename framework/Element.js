@@ -1372,7 +1372,12 @@ ma.getAll = function(query, container) {
 			el = ma.Element.find(query);
 		}
 		else {
-			parent = ma.get(container);
+			if (container instanceof ma.Element) {
+				parent = container.dom;
+			}
+			else {
+				parent = ma.get(container);
+			}
 
 			if (container && parent) {
 				el = ma.Element.find(query, parent);
