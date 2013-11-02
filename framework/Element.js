@@ -1187,11 +1187,11 @@ ma.extend(ma.Element, ma.Base, {
 	 * @return {jQuery} jQuery wrapper of this element
 	 */
 	$: function() {
-		if (!this._jQuery) {
-			this._jQuery = $(this.dom);
+		if (!this.jQuery) {
+			this.jQuery = $(this.dom);
 		}
 
-		return this._jQuery;
+		return this.jQuery;
 	}
 
 
