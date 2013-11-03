@@ -126,16 +126,12 @@ ma = {
 		var i, cnt, initFunction;
 		for (i = 0, cnt = ma._onInit.length; i < cnt; i++) {
 			initFunction = ma._onInit[i];
-			if (ma._runInitFunction(initFunction, i)) {
-				delete ma._onInit[i]; //cannot call non-function
-			}
+			ma._runInitFunction(initFunction, i);
 		} //for each init method
 		//after all init methods are executed...
-		if (0 === ma._onInit.length) {
-			//disable interval if nothing is left to init
-			if (ma._onInit.waiting) {
-				window.clearInterval(ma._onInit.waiting);
-			}
+		//disable interval if nothing is left to init
+		if (ma._onInit.waiting) {
+			window.clearInterval(ma._onInit.waiting);
 		}
 	},
 
@@ -174,6 +170,8 @@ ma = {
 		 */
 		_class: function(namespace, baseScope) {
 			if ('string' !== typeof namespace) {
+				this.errorIndex = 0;
+				this.errorName = 'undefined';
 				return this;
 			}
 
@@ -288,61 +286,76 @@ ma = {
 	/**
 	 * registers any function to be executed the moment framework is initialized
 	 *
-	 * @param  [Function] initialization function
+	 * @param  [Function/String] initialization function
 	 * @param  [String]  (optional, default: none) name of namespace that must be defined before init can be called (e.g. 'ma.console' to wait for ma.console to initialize)
 	 * @return [Boolean] true if function was already executed, false for function registered, null for error
 	 */
 	registerInitFunction: function(initFunction, required, name){
 		required = required || 'window.ma';
-		if ('function' === typeof initFunction) {
-			if (initFunction._initRequired) {
-				ma.console.warn('Each method can be used only once for initialization when "required" parameter is defined');
-			}
-			if (required) { //prevents saving null or empty string
-				initFunction._initRequired = required;
-			}
-			initFunction._name = name || 'NoName';
-			if (true === ma._isReady) { //framework was already initialized...
-				if (!ma._runInitFunction(initFunction, 'post-init')) {
-					//initFunction must wait for required
-					ma._onInit.push(initFunction);
-					return false;
-				}
-				return true;
-			}
 
-			ma._onInit.push(initFunction);
+		var init = {
+			required: required,
+			name: ('string' === typeof initFunction ? initFunction : name || 'anonymous')
+		};
+
+		if (-1 < ma._onInit.indexOf(initFunction)) {
+			ma.console.warn('Each method can be used only once for initialization.');
+		}
+
+		if ('string' === typeof initFunction) {
+			init.namespace = initFunction;
+		}
+		else if ('function' === typeof initFunction) {
+			init.fn = initFunction;
+		}
+
+		if (true === ma._isReady) { //framework was already initialized...
+			if (!ma._runInitFunction(initFunction)) {
+				//initFunction must wait for required
+				ma._onInit.push(initFunction);
+				return false;
+			}
+			return true;
+		}
+		else {
+			ma._onInit.push(init);
 			return false;
 		}
 
-		ma.console.error('Cannot use non-function for initialization');
+		ma.console.error('Invalid function for initialization.');
 		return null;
 	}, //registerInitFunction()
+
 	/**
 	 * @private
 	 * executes initFunction
 	 *
-	 * @param  [Function] reference to initFunction
+	 * @param  [Object] init function processed by registerInitFunction()
 	 * @return [Boolean]  true when function was already executed, false for postponed ones
 	 */
-	_runInitFunction: function(initFunction, index){
-		if ('function' !== typeof initFunction) {
+	_runInitFunction: function(initFunction){
+		if (!initFunction.fn && !initFunction.namespace) {
+			ma.console.log('Invalid init ' + initFunction.name + ' function ignored.');
 			return true;
 		}
 
-		index = !ma.util.is(index, 'empty') ? ' (index:' + index + ')' : '';
-
-		var required = initFunction._initRequired, name = initFunction._name;
+		var required = initFunction.required, name = initFunction.name, ns;
 
 		if ('string' === typeof required && !ma.isDefined(required)) {
-			ma.console.log('Init method ' + name + index + ' is waiting for ' + required);
+			ma.console.log('Init method ' + name + ' is waiting for ' + required);
 			if (!ma._onInit.waiting) { //set timer to execute this method again in a while
 				ma._onInit.waiting = window.setInterval(ma._onInitExecuter, 50);
 			}
 			return false;
 		}
-		ma.console.log('Init method ' + name + index + ' is ready to execute');
-		initFunction();
+		ma.console.log('Init method ' + name + ' is ready to execute');
+		if (initFunction.namespace) {
+			ns = new ma.Namespace(initFunction.namespace);
+			ns.call();
+		}
+		else {
+			initFunction.fn();
+		}
 		return true;
 	},
 

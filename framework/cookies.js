@@ -357,4 +357,4 @@ Ext.apply(ma.Cookie, {
 	}
 }); //ma.Cookie class methods
 
-ma.registerInitFunction(ma.Cookie._test);
+ma.registerInitFunction(ma.Cookie._test, null, 'Cookies');

@@ -314,4 +314,4 @@ Ext.apply(ma.Storage, {
 	}
 }); //ma.Cookie class methods
 
-ma.registerInitFunction(ma.Storage._test);
+ma.registerInitFunction(ma.Storage._test, null, 'Storage');

@@ -630,4 +630,4 @@ ma._Browser._init = function(){
 	ma.browser._setEvents();
 };
 
-ma.registerInitFunction(ma._Browser._init);
+ma.registerInitFunction(ma._Browser._init, null, 'Browser');
