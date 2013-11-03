@@ -79,7 +79,7 @@ ma.Element = function(domElement){
 		ma.console.errorAt('Cannot wrap "window" and "document" objects.', this._fullName, 'constructor');
 	}
 	//if domElement is in fact a ma.Element already, return it (used in some functions for parameter)
-	if (is(domElement, ma.Element)) {
+	if (is(domElement, ma.Element) && domElement.isReady) {
 		return domElement;
 	}
 	//if domElement is Ext's Element, use the DOM instead
@@ -94,105 +94,111 @@ ma.Element = function(domElement){
 	this.inherit(arguments);
 
 	//Create new element from configuration
-	if (!is(domElement, HTMLElement)) { //we only get element configuration
-		config = domElement || {};
-		if (is(config, String)) {
-			config = {
-				tagName: config
-			};
-		}
-		else {
-			config = ma.util.clone(config);
-		}
-
-		if (config.id) {
-			if (document.getElementById(config.id)) {
-				ma.console.errorAt('Duplicate Element; id "' + config.id + '" is already used!', this._fullName, 'constructor');
-				return null;
-			}
-		}
-
-		//set visibility
-		if (undefined !== config.visible) {
-			visibility = (false !== config.visible);
-			delete config.visible;
-		}
-
-		//keep JS params
-		if (undefined !== config.params) {
-			params = config.params;
-			delete config.params;
-		}
-
-		//get elements children
-		if (config.children || config.items) {
-			children = config.children || config.items;
-			delete config.children;
-			delete config.items;
-		}
-		if (config.childrenTagName || config.itemsTagName) {
-			children.defaultTagName = config.childrenTagName || config.itemsTagName;
-			delete config.childrenTagName;
-			delete config.itemsTagName;
-		}
-
-		if (config.legend) {
-			if ('FIELDSET' !== config.tagName.toUpperCase()) {
-				ma.console.warn('Cannot create LEGEND for non-fieldset element.', this._fullName);
+	if (is(domElement, ma.Element)) {
+		this.dom = domElement.dom;                  //reference to wrapped object
+		this.ext = domElement.ext;                  //reference to Ext wrapper object
+	}
+	else {
+		if (!is(domElement, HTMLElement)) { //we only get element configuration
+			config = domElement || {};
+			if (is(config, String)) {
+				config = {
+					tagName: config
+				};
 			}
 			else {
-				if (!children) {
-					children = [];
+				config = ma.util.clone(config);
+			}
+
+			if (config.id) {
+				if (document.getElementById(config.id)) {
+					ma.console.errorAt('Duplicate Element; id "' + config.id + '" is already used!', this._fullName, 'constructor');
+					return null;
 				}
-				children.unshift({ //place as first element
-					tagName: 'legend',
-					innerHTML: '&nbsp;' + config.legend + '&nbsp;'
-				});
 			}
-			delete config.legend;
-		}
 
-		if (config.tagName === 'label' && config['for']) {
-			config.htmlFor = config['for'];
-			delete config['for'];
-		}
-
-		//convert content to innerHTML
-		if (config.content) {
-			config.innerHTML = config.content;
-			delete config.content;
-		}
-
-		//handle input elements defined by type as inputs
-		if (config.type) {
-			config.tagName = 'input';
-		}
-
-		//get events
-		if (config.listeners || config.on) {
-			listeners = config.listeners || config.on;
-			//make a link to look like a link
-			if (config.tagName.toLowerCase() === 'a' && ma.util.is(listeners.click, Function)) {
-				config.href = '#';
+			//set visibility
+			if (undefined !== config.visible) {
+				visibility = (false !== config.visible);
+				delete config.visible;
 			}
-			delete config.on;
-			delete config.listeners;
+
+			//keep JS params
+			if (undefined !== config.params) {
+				params = config.params;
+				delete config.params;
+			}
+
+			//get elements children
+			if (config.children || config.items) {
+				children = config.children || config.items;
+				delete config.children;
+				delete config.items;
+			}
+			if (config.childrenTagName || config.itemsTagName) {
+				children.defaultTagName = config.childrenTagName || config.itemsTagName;
+				delete config.childrenTagName;
+				delete config.itemsTagName;
+			}
+
+			if (config.legend) {
+				if ('FIELDSET' !== config.tagName.toUpperCase()) {
+					ma.console.warn('Cannot create LEGEND for non-fieldset element.', this._fullName);
+				}
+				else {
+					if (!children) {
+						children = [];
+					}
+					children.unshift({ //place as first element
+						tagName: 'legend',
+						innerHTML: '&nbsp;' + config.legend + '&nbsp;'
+					});
+				}
+				delete config.legend;
+			}
+
+			if (config.tagName === 'label' && config['for']) {
+				config.htmlFor = config['for'];
+				delete config['for'];
+			}
+
+			//convert content to innerHTML
+			if (config.content) {
+				config.innerHTML = config.content;
+				delete config.content;
+			}
+
+			//handle input elements defined by type as inputs
+			if (config.type) {
+				config.tagName = 'input';
+			}
+
+			//get events
+			if (config.listeners || config.on) {
+				listeners = config.listeners || config.on;
+				//make a link to look like a link
+				if (config.tagName.toLowerCase() === 'a' && ma.util.is(listeners.click, Function)) {
+					config.href = '#';
+				}
+				delete config.on;
+				delete config.listeners;
+			}
+
+			domElement = document.createElement(config.tagName || 'div');
+
+			ma.util.merge(config, {
+				id: config.id || 'element_' + (ma.Element._lastId++)
+			}); //clone config
+			delete config.tagName;
+			ma.util.merge(domElement, config);
 		}
 
-		domElement = document.createElement(config.tagName || 'div');
+		this.dom = domElement;                  //reference to wrapped object
+		domElement._ma_wrapper = this;          //backward reference for wrapper
 
-		ma.util.merge(config, {
-			id: config.id || 'element_' + (ma.Element._lastId++)
-		}); //clone config
-		delete config.tagName;
-		ma.util.merge(domElement, config);
+		this.ext = new Ext.Element(domElement); //create Ext wrapper object
+		this.ext._ma_wrapper = this;            //backward reference for wrapper
 	}
-
-	this.dom = domElement;                  //reference to wrapped object
-	domElement._ma_wrapper = this;          //backward reference for wrapper
-
-	this.ext = new Ext.Element(domElement); //create Ext wrapper object
-	this.ext._ma_wrapper = this;            //backward reference for wrapper
 
 	//set other Element's properties
 	this.merge({
@@ -369,7 +375,10 @@ ma.extend(ma.Element, ma.Base, {
 	}, //_htmlEventHandler()
 
 	/**
-	 *   !!! NOT TESTED !!!
+	 * Registers new handler for given event
+	 *
+	 * @param  event {String} name of an event
+	 * @param  handler {Function} handler for the event
 	 */
 	addHandler: function(event, handler) {
 		if (this._htmlEvents[event]) {

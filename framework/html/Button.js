@@ -49,32 +49,16 @@
 ma.Element.Button = function(domElement){
 	var el, text;
 
+	if (ma.is(domElement, ma.Element)) {
+		domElement.isReady = false; //force constructor to initialize this element again
+	}
 	this.inherit(arguments);
-
-	//Create new element from configuration
-	el = new ma.Element(domElement)
-
-	//copy references from Element
-	this.element = el;
-	this.dom = el.dom;
-	this.ext = el.ext;
-	this.element = el;
 
 	//Initialize JQUI button
 	this.create();
 
 	//if JQUI wrapped content in span, we need to get this wrapper
-	text = ma.get('.ui-button-text', el);
-	if (text) {
-		this.text = text;
-		el = new ma.Element(text);
-	}
-
-	//back reference to access this Button object
-	el.button = this;
-
-	//return base ma.Element instead of ma.Element.button
-	return el;
+	this.text = ma.get('.ui-button-text', el);
 }; //ma.Element.Button
 
 ma.extend('ma.Element.Button', ma.Element, {
@@ -83,7 +67,7 @@ ma.extend('ma.Element.Button', ma.Element, {
  */
 
 	call: function() {
-		this.element.$().button.apply(this.element.$(), arguments);
+		this.$().button.apply(this.$(), arguments);
 	},
 
 	create: function() {
@@ -100,5 +84,24 @@ ma.extend('ma.Element.Button', ma.Element, {
 
 	enable: function() {
 		this.call('enable');
+	},
+
+	addHandler: function(event, handler) {
+		if (this.text) { //if text element exists, register listener to the text element but on scope of the button
+			if (this._htmlEvents[event]) {
+				if (ma.util.is(handler, Function)) {
+					this.text.addListener(event, this._htmlHandlerHelper.setScope(this, [handler]));
+				}
+				else {
+					ma.console.errorAt('Invalid event handler for event ' + event, this._fullName, 'addHandler');
+				}
+			}
+			else {
+				ma.console.errorAt('Invalid event "' + event + '" to listen to.', this._fullName, 'addHandler');
+			}
+		}
+		else {
+			this.inherit('addHandler', arguments);
+		}
 	}
 }); //extend(ma.Element.Form)
