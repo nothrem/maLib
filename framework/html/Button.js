@@ -22,9 +22,9 @@
 
 /**
  * @constructor
- * creates new wrapper for Form element
+ * creates new wrapper for Button element
  *
- * @param  [DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
+ * @param  [Ma.Element / DOMelement / Object] DOM element to wrap or its configuration (see ma.Element.Add)
  *               [Object] configuration
  *                    .id          [String] (optional, default: 'element_' + index) id of the element
  *                    .children    [Array]  (optional) child nodes (see ma.Element.add()) for this element (alias .items can be used); note that setting both innerHTML and children may have unforseen consequences
@@ -38,12 +38,14 @@
 
  * @event HTMLevents      fires any time some HTML event occurs; events are click, doubleClick, mouseMove, keyDown, etc.
  *           <param>   [Event]      see ma.Observable.getEvent()
- * @event submit          fires when user clicks on a button created by type 'submit
- *           <param>   [String]     if of a button that was clicked on
  *
- * @example Possibilities of ma.Element.Form objects
+ * @example Possibilities of ma.Element.Button objects
 		<code>
-			TODO
+			var button = new ma.Element.Button(myLink); //make myLink to appear and work as button
+			button.on('click', function() { ... });     //register click handler
+			button.disable();  //make button not clickable
+			button.enable();   //make button clickable again
+			button.destroy();  //return previous appearance and functionality of myLink
 		</code>
  */
 ma.Element.Button = function(domElement){
@@ -66,26 +68,50 @@ ma.extend('ma.Element.Button', ma.Element, {
  * @scope ma.Element.Button
  */
 
+	/**
+	 * Alias for button() method of jQuery UI; will be automatically called on this element
+	 *
+	 * @param  [String] action - see jQuery UI Button API
+	 * @return [void] does not return anything (does NOT return jQuery wrapper as usual in jQuery)
+	 */
 	call: function() {
 		this.$().button.apply(this.$(), arguments);
 	},
 
+	/**
+	 * Make element appear as button - automatically called in contructor; may be used after destroy()
+	 */
 	create: function() {
 		this.call();
 	},
 
+	/**
+	 * Returns element info original functionality
+	 */
 	destroy: function() {
 		this.call('destroy');
 	},
 
+	/**
+	 * Disables the button and makes it not clickable
+	 */
 	disable: function() {
 		this.call('destroy');
 	},
 
+	/**
+	 * Enables the button to react to hover and click
+	 */
 	enable: function() {
 		this.call('enable');
 	},
 
+	/**
+	 * Registers new event handler; automatically registers event to relevant part of the button
+	 *
+	 * @param  [String] event (see ma.Element::addHandler)
+	 * @param  [Function] handler (see ma.Element::addHandler)
+	 */
 	addHandler: function(event, handler) {
 		if (this.text) { //if text element exists, register listener to the text element but on scope of the button
 			if (this._htmlEvents[event]) {
@@ -104,4 +130,4 @@ ma.extend('ma.Element.Button', ma.Element, {
 			this.inherit('addHandler', arguments);
 		}
 	}
-}); //extend(ma.Element.Form)
+}); //extend(ma.Element.Button)
