@@ -50,6 +50,7 @@ ma = {
 		ma.loadJS('external/ExtJs3core/ext-jquery-adapter' + (ma._isDebug ? '-debug' : '')); //jQuery-to-Ext convertor
 //		ma.loadJS('external/ExtJs3core/ext-core' + (ma._isDebug ? '-debug' : '')); //Ext 3.1.0 (kept here for debugging - Ext 3.4.x is not tested for Core mode and may contain references to full Ext)
 		ma.loadJS('external/ExtJs3core/ext-core-update' + (ma._isDebug ? '-debug' : '')); //Ext 3.4.1.1 (requires Ext-Base or Ext-Adapter to base on)
+		document.write('<script type="text/javascript">ma._onInitFramework();</script>');
 		//load internal CSS files
 		ma.loadCSS('style/framework');
 		//load internal files
@@ -111,6 +112,13 @@ ma = {
 	},
 
 	/**
+	 * Performs actions that initializes maLib but required Ext to be already initialized
+	 */
+	_onInitFramework: function() {
+		ma.Namespace = ma.extend(ma.Namespace._class, ma.Array, ma.Namespace); //object used by ma.getNamespace()
+	},
+
+	/**
 	 * @private
 	 * runs onInit functions
 	 */
@@ -141,79 +149,91 @@ ma = {
 		return (true === ma._isReady) && (true === Ext.isReady);
 	},
 
+	Namespace: {
+		_className: 'Namespace',
+		_fullName: 'ma.Namespace',
+		/**
+		 * @private
+		 * parses namespace string into array
+		 *
+		 * @param  namespace    [String]
+		 * @param  baseScope    [Object] (optional, default: window) reference to object where to start looking for namespace
+		 * @return [Array] (empty for invalid namespace; see errorIndex and errorName)
+		 *           indexes    [String] parsed namespace path (e.g. ['window', 'document', 'body']
+		 *           .length    [Integer] number of path parts (note that this is standard Array property)
+		 *           .namespace [String] original namespace (e.g. 'window.document.body')
+		 *           .nodeName  [String] name of last node (e.g. 'body')
+		 *           .scopeName [String] namespace w/o/ node (e.g. 'window.document'); empty if namespace is direct child of baseScope
+		 *           .node      [Object] reference to node (e.g. reference to window.document.body); undefined if node is invalid; NULL if node is NULL (in this case error is empty)
+		 *           .scope     [Object] reference to scope (e.g. reference to window.document); undefined if a path part is invalid; NULL if errorName is NULL
+		 *           .call      [Function] if node if function, calls is in its scope and given params and returns its result; otherwise returns undefined; note that it must be called in scope of this array
+		 *           .errorIndex[Integer] index of path part that is undefined (path part must be defined and not NULL; node must be defined but can be NULL)
+		 *                                is undefined when whole namespace is valid; -1 if only last node is invalid (i.e. scope is valid)
+		 *           .errorName [String]  name of node that is invalid
+		 *                                is undefined when whole namespace is valid
+		 */
+		_class: function(namespace, baseScope) {
+			if ('string' !== typeof namespace) {
+				return this;
+			}
+
+			var
+				scope = baseScope || window,
+				path = namespace.split('.'),
+				length = path.length,
+				i, part,
+				error, errorMessage;
+
+			this.namespace = namespace;
+			this.nodeName = path[length - 1];
+			this.scopeName = path.slice(0, -1).join('.');
+
+			for (i = 0; i < (length - 1); i++) {
+				part = path[i];
+				scope = scope[part];
+
+				this.push(part);
+
+				if (undefined === scope || null === scope) {
+					//scope is undefined - write error and quit looking; null is also forbidden for scope as it needs to have child nodes
+					this.errorIndex = i;
+					this.errorName = part;
+					break;
+				}
+			}
+
+			this.scope = scope;
+
+			if (scope) {
+				this.node = scope[this.nodeName];
+
+				if (undefined === this.node) {
+					this.errorIndex = -1;
+					this.errorName = this.nodeName;
+				}
+			}
+			else {
+				this.node = undefined;
+			}
+			this.push(this.node);
+
+		}, //class constructor
+		call: function() {
+			if (undefined === this.errorIndex && ma.util.is(this.node, Function)) {
+				this.node.apply(this.scope, arguments);
+			}
+		}
+	},
+
 	/**
-	 * @private
-	 * parses namespace string into array
+	 * returns new Namespace object from given path
 	 *
 	 * @param  namespace    [String]
 	 * @param  baseScope    [Object] (optional, default: window) reference to object where to start looking for namespace
-	 * @return [Array] (empty for invalid namespace; see errorIndex and errorName)
-	 *           indexes    [String] parsed namespace path (e.g. ['window', 'document', 'body']
-	 *           .length    [Integer] number of path parts (note that this is standard Array property)
-	 *           .namespace [String] original namespace (e.g. 'window.document.body')
-	 *           .nodeName  [String] name of last node (e.g. 'body')
-	 *           .scopeName [String] namespace w/o/ node (e.g. 'window.document'); empty if namespace is direct child of baseScope
-	 *           .node      [Object] reference to node (e.g. reference to window.document.body); undefined if node is invalid; NULL if node is NULL (in this case error is empty)
-	 *           .scope     [Object] reference to scope (e.g. reference to window.document); undefined if a path part is invalid; NULL if errorName is NULL
-	 *           .call      [Function] if node if function, calls is in its scope and given params and returns its result; otherwise returns undefined; note that it must be called in scope of this array
-	 *           .errorIndex[Integer] index of path part that is undefined (path part must be defined and not NULL; node must be defined but can be NULL)
-	 *                                is undefined when whole namespace is valid; -1 if only last node is invalid (i.e. scope is valid)
-	 *           .errorName [String]  name of node that is invalid
-	 *                                is undefined when whole namespace is valid
+	 * @return [ma.Namespace]
 	 */
 	_getNamespace: function(namespace, baseScope) {
-		if ('string' !== typeof namespace) {
-			return null;
-		}
-
-		var
-			scope = baseScope || window,
-			/**
-			 * object of path
-			 */
-			path = namespace.split('.'),
-			length = path.length,
-			i, part,
-			error, errorMessage;
-
-		path.namespace = namespace;
-		path.nodeName = path[length - 1];
-		path.scopeName = path.slice(0, -1).join('.');
-
-		for (i = 0; i < (length - 1); i++) {
-			part = path[i];
-			scope = scope[part];
-
-			if (undefined === scope || null === scope) {
-				//scope is undefined - write error and quit looking; null is also forbidden for scope as it needs to have child nodes
-				path.errorIndex = i;
-				path.errorName = part;
-				break;
-			}
-		}
-
-		path.scope = scope;
-
-		if (scope) {
-			path.node = scope[path.nodeName];
-
-			if (undefined === path.node) {
-				path.errorIndex = -1;
-				path.errorName = path.nodeName;
-			}
-		}
-		else {
-			path.node = undefined;
-		}
-
-		path.call = ma._getNamespaceCall;
-
-		return path;
-	},
-	_getNamespaceCall: function() {
-		if (undefined === this.errorIndex && ma.util.is(this.node, Function)) {
-			this.node.apply(this.scope, arguments);
-		}
+		return new ma.Namespace(namespace, baseScope);
 	},
 
 	/**
@@ -300,7 +320,7 @@ ma = {
 	}, //registerInitFunction()
 	/**
 	 * @private
-	 * exucutes initFunction
+	 * executes initFunction
 	 *
 	 * @param  [Function] reference to initFunction
 	 * @return [Boolean]  true when function was already executed, false for postponed ones
@@ -454,6 +474,9 @@ if (!window.HTMLElement) {
 	window.HTMLElement = 'HTMLElement';
 }
 
+//workaround for Ext not being able to recognize Objects inherited from Array as an Array
+ma.Array = function() { };
+ma.Array.prototype = []; //very simple inheritance from Array
 
 ma._loadFiles(ma._getMyPath());
 
@@ -482,3 +505,4 @@ if (false) {
 	};
 
 })(window, window.onload, window.onunload);
+

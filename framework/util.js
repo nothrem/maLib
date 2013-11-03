@@ -241,6 +241,9 @@ ma.util = {
 			return 'boolean' === typeof value || value instanceof Boolean;
 		}
 		if (Array === type ) {
+			if (ma.Array && ma.util.is(value, ma.Array)) {
+				return true;
+			}
 			return true === Ext.isArray(value);
 		}
 		if (Function === type ) {
