@@ -37,7 +37,6 @@ ma.Base = function() {
 	this.isReady = true;
 	this._isInstance = true;
 	this._isClass = false;
-
 };
 
 Ext.extend(ma.Base, ma.Observable, {
@@ -50,6 +49,7 @@ Ext.extend(ma.Base, ma.Observable, {
 	_className: 'Base',
 	_fullName: 'ma.Base',
 	_class: ma.Base,
+	_parentClass: null,
 
 	/**
 	 * Calls inherited (superclass'/parent's) constructor with given arguments
@@ -57,8 +57,35 @@ Ext.extend(ma.Base, ma.Observable, {
 	 * @param  args {Arguments} list of arguments of the contructor
 	 * @return {Mixed} result of the parent constructor - in most cases it should be the calling object (i.e. 'this')
 	 */
-	inherit: function(args) {
-		return this.superclass().constructor.apply(this, args);
+	inherit: function(method, args) {
+		var parent = this._parentClass;
+
+		//get parent if not defined yet
+		if (!parent) {
+			parent = this.superclass();
+		}
+
+		//get correct method
+		if ('string' === typeof method) {
+			if (!parent[method]) {
+				ma.console.errorAt('Invalid method for inheritance call', this._fullName, 'inherit::' + method);
+				return;
+			}
+			method = parent[method];
+		}
+		else {
+			args = method;
+			method = parent.constructor;
+		}
+
+		//call method
+		this._parentClass = parent.superclass(); //set correct parent for called inherited method
+		try {
+			method.apply(this, args);
+		}
+		finally { //return correct parent for this object
+			this._parentClass = parent;
+		}
 	},
 
 	/**
