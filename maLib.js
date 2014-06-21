@@ -47,6 +47,7 @@ ma = {
 		ma.loadJS('external/jQuery/jquery' + (ma._isDebug ? '' : '.min')); //jQuery
 		ma.loadJS('external/jQuery/jquery-ui' + (ma._isDebug ? '' : '.min')); //jQuery UI
 		ma.loadJS('external/jQuery/jquery-ui-i18n' + (ma._isDebug ? '' : '.min')); //jQuery
+		ma.loadJS('external/jQuery/jquery-timing' + (ma._isDebug ? '' : '.min')); //jQuery
 		ma.loadJS('external/ExtJs3core/ext-jquery-adapter' + (ma._isDebug ? '-debug' : '')); //jQuery-to-Ext convertor
 //		ma.loadJS('external/ExtJs3core/ext-core' + (ma._isDebug ? '-debug' : '')); //Ext 3.1.0 (kept here for debugging - Ext 3.4.x is not tested for Core mode and may contain references to full Ext)
 		ma.loadJS('external/ExtJs3core/ext-core-update' + (ma._isDebug ? '-debug' : '')); //Ext 3.4.1.1 (requires Ext-Base or Ext-Adapter to base on)
