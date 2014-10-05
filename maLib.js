@@ -418,9 +418,18 @@ ma = {
 	 */
 	_getMyPath: function() {
 		var
-			head = document.getElementsByTagName('HEAD')[0],
-			regex = /src=\"(.*)\/maLib\.js(\?debug)?\"/g,
-			path = regex.exec(head.innerHTML);
+			scripts = document.getElementsByTagName('script'),
+			regex = /(.*)\/maLib\.js(\?debug)?/g,
+			cnt = scripts.length,
+			path,
+			i;
+
+		for (i = 0; i < cnt; i++) {
+			path = regex.exec(scripts[i].src);
+			if (path) {
+				break  //if path found, end the searching
+			}
+		}
 
 		if (path && path[2]) {
 			ma._isDebug = true;
