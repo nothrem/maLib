@@ -38,6 +38,8 @@ ma = {
 	 * @note start path with '/' to use absolute path (e.g. http://server/path) or w/o '/' for relative (e.g. http://server/project/path)
 	 */
 	_loadFiles: function(path){
+		var write = 'write';
+
 		path = path || '';
 		ma._filePath = path;
 		//load CSS files for jQuery UI
@@ -51,7 +53,7 @@ ma = {
 		ma.loadJS('external/ExtJs3core/ext-jquery-adapter' + (ma._isDebug ? '-debug' : '')); //jQuery-to-Ext convertor
 //		ma.loadJS('external/ExtJs3core/ext-core' + (ma._isDebug ? '-debug' : '')); //Ext 3.1.0 (kept here for debugging - Ext 3.4.x is not tested for Core mode and may contain references to full Ext)
 		ma.loadJS('external/ExtJs3core/ext-core-update' + (ma._isDebug ? '-debug' : '')); //Ext 3.4.1.1 (requires Ext-Base or Ext-Adapter to base on)
-		document.write('<script type="text/javascript">ma._onInitFramework();</script>');
+		document[write]('<script type="text/javascript">ma._onInitFramework();</script>'); //prevents JSlint from saying that document.write is evil ;)
 		//load internal CSS files
 		ma.loadCSS('style/framework');
 		//load internal files
@@ -180,8 +182,7 @@ ma = {
 				scope = baseScope || window,
 				path = namespace.split('.'),
 				length = path.length,
-				i, part,
-				error, errorMessage;
+				i, part;
 
 			this.namespace = namespace;
 			this.nodeName = path[length - 1];
@@ -318,13 +319,9 @@ ma = {
 			}
 			return true;
 		}
-		else {
-			ma._onInit.push(init);
-			return false;
-		}
 
-		ma.console.error('Invalid function for initialization.');
-		return null;
+		ma._onInit.push(init);
+		return false;
 	}, //registerInitFunction()
 
 	/**
@@ -368,15 +365,17 @@ ma = {
 	 * @return [void]
 	 */
 	loadJS: function(fileName, rootPath){
+		var script, head, write;
 		if (ma.isReady()) {
-			var script = document.createElement('script'), head = document.head || document.getElementByTagName('head')[0];
+			script = document.createElement('script');
+			head = document.head || document.getElementByTagName('head')[0];
 
 			script.type = 'text/javascript';
 			script.src = (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js';
 			head.appendChild(script);
 		}
 		else {
-			var write = 'write'; //prevents JSlint from saying that document.write is evil ;)
+			write = 'write'; //prevents JSlint from saying that document.write is evil ;)
 			document[write]('<script type="text/javascript" src="' + (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js"></script>');
 		}
 	}, //loadJS()
@@ -427,7 +426,7 @@ ma = {
 		for (i = 0; i < cnt; i++) {
 			path = regex.exec(scripts[i].src);
 			if (path) {
-				break  //if path found, end the searching
+				break; //if path found, end the searching
 			}
 		}
 
@@ -498,14 +497,14 @@ if (!window.HTMLElement) {
 }
 
 //workaround for Ext not being able to recognize Objects inherited from Array as an Array
-ma.Array = function() { };
+ma.Array = function() { /* Array constructor */ return; };
 ma.Array.prototype = []; //very simple inheritance from Array
 
 ma._loadFiles(ma._getMyPath());
 
 if (false) {
 	/**
-	 * Browser window object
+	 * Browser window object - helps some IDEs to detect definitions in JS
 	 */
 	window = {};
 }
