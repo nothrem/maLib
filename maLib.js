@@ -357,6 +357,9 @@ ma = {
 		return true;
 	},
 
+	_loadJsExtension: '.js',
+	_loadCssExtension: '.css',
+
 	/**
 	 * load JavaScript file into HTML head
 	 *
@@ -371,7 +374,7 @@ ma = {
 			head = document.head || document.getElementByTagName('head')[0];
 
 			script.type = 'text/javascript';
-			script.src = (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js';
+			script.src = (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + ma._loadJsExtension;
 			head.appendChild(script);
 		}
 		else {
@@ -379,6 +382,7 @@ ma = {
 			document[write]('<script type="text/javascript" src="' + (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js"></script>');
 		}
 	}, //loadJS()
+
 	/**
 	 * load CSS file into HTML head
 	 *
@@ -390,7 +394,7 @@ ma = {
 		var link = document.createElement('LINK');
 		link.setAttribute('type', 'text/css');
 		link.setAttribute('rel', 'stylesheet');
-		link.setAttribute('href',  (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.css');
+		link.setAttribute('href',  (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + ma._loadCssExtension);
 		document.getElementsByTagName("head").item(0).appendChild(link);
 	}, //loadCSS
 	/**
