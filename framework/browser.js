@@ -617,7 +617,57 @@ ma.extend('ma._Browser', ma.Base, {
 		}
 
 		arguments.callee.defer(timeout, this, [url, 0]);
-	}
+	},
+
+	/**
+	 * Return spinner (loading) element that can be appended into an element
+	 * Use .spin() to start, then .el to get the elemtn, .stop() to remove elements from DOM
+	 *
+	 * @param  {String} name (optional) if given, creates multiton to cache created spinners
+	 * @param  {Boolean} start (optional) true = start the spinner and return directly DOM element; false = stop already started spinner, undefined = just return the spinner
+	 * @param  {Object} options (optional) any defined value will overwrite default options for the spinner
+	 * @return {Spinner/HTMLElement} either spinner or HTML element of the spinner (is start = true)
+	 *
+	 * @example <pre>
+		getSpinner(); //create new unnamed spinner
+		getSpinner(true); //create new unnamed spinner, start it and return HTMLElement
+		getSpinner('wait'); //create new spinner and store it for later use
+		getSpinner('loading', true);  //create new spinner, store it, start it and return HTMLElement
+		getSpinner('loading', false); //stop previously created spinner 'loading' and return it
+		getSpinner({...}); //create new spinner with custom options and return it
+		getSpinner(true, {...}); //start new spinner with custom options and return HTMLElement
+		getSpinner('small', { ... }); //create new named spinner with custom options
+		getSpinner('small', true, { ... }); //create new named spinner with custom options and return HTMLElement
+</pre>
+	 */
+	spin: function(show) {
+		var spinner = $('#body-spinner');
+		if (false === show && spinner.length) {
+			spinner.parent().spin(false).end().remove();
+			return;
+		}
+		if (spinner.length) {
+			return;
+		}
+		$('body')
+			.prepend(
+				$(document.createElement('SECTION'))
+					.attr('id', 'body-spinner')
+					.css({
+						position: 'fixed',
+						'left': 0,
+						'top': 0,
+						width: '100%',
+						height: '100%',
+						opacity: 0.3,
+						background: '#000000',
+						'z-index': 1999999999
+					})
+			)
+			.spin()
+			.data().spinner.el.style.position = 'fixed';
+		;
+	},
 
 
 }); //extend(ma._Browser)

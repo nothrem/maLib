@@ -71,6 +71,8 @@ ma = {
 		ma.loadJS('framework/storage');
 		ma.loadJS('framework/ajax');
 		ma.loadJS('framework/ajaxCache');
+		ma.loadJS('external/spin/spin' + (ma._isDebug ? '' : '.min'));
+		ma.loadJS('external/spin/jquery.spin');
 	},
 
 	/**
