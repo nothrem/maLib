@@ -350,11 +350,21 @@ ma = {
 		}
 		ma.console.log('Init method ' + name + ' is ready to execute');
 		if (initFunction.namespace) {
-			ns = new ma.Namespace(initFunction.namespace);
-			ns.call();
+			try {
+				ns = new ma.Namespace(initFunction.namespace);
+				ns.call();
+			}
+			catch (e) {
+				ma.console.warn('Init method ' + name + ' failed to initialize its namespace!');
+			}
 		}
 		else {
-			initFunction.fn();
+			try {
+				initFunction.fn();
+			}
+			catch (e) {
+				ma.console.warn('Init method ' + name + ' failed to run!');
+			}
 		}
 		return true;
 	},
