@@ -371,17 +371,20 @@ ma = {
 	 */
 	loadJS: function(fileName, rootPath){
 		var script, head, write;
+
+		fileName = (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + ma._loadJsExtension + '?' + (new Date()).getTime();
+
 		if (ma.isReady()) {
 			script = document.createElement('script');
 			head = document.head || document.getElementByTagName('head')[0];
 
 			script.type = 'text/javascript';
-			script.src = (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + ma._loadJsExtension;
+			script.src = fileName;
 			head.appendChild(script);
 		}
 		else {
 			write = 'write'; //prevents JSlint from saying that document.write is evil ;)
-			document[write]('<script type="text/javascript" src="' + (true === rootPath ? '' : ma._filePath ? ma._filePath + '/' : '') + fileName + '.js"></script>');
+			document[write]('<script type="text/javascript" src="' + fileName + '"></script>');
 		}
 	}, //loadJS()
 
